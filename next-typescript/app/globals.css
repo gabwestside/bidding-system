@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* Cores e fonte personalizadas - Tailwind v4 */
+@theme {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-primary: #1e73c6;
+  --color-primary-light: #2e86de;
+  --color-surface: #f3f4f6;
+  --color-panel: #e4e7eb;
+
+  --color-card-blue: #2ea9d8;
+  --color-card-blue-strong: #2e86de;
+  --color-card-green: #5bbf5b;
+}

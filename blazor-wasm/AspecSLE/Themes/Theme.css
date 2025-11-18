@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Cores do layout */
+  --color-primary: #1e73c6;      /* barra principal azul */
+  --color-primary-light: #2e86de;
+  --color-surface: #f3f4f6;      /* fundo da página */
+  --color-panel: #e4e7eb;        /* fundo do painel grande */
+
+  --color-card-blue: #2ea9d8;
+  --color-card-green: #5bbf5b;
+  --color-card-blue-strong: #2e86de;
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
