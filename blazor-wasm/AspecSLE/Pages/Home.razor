@@ -2,47 +2,147 @@
 
 <PageTitle>Início</PageTitle>
 
-<section class="bg-panel rounded-sm px-8 py-10 shadow-inner border border-primary-light">
-    <!-- Linha com os 3 cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Card: Fornecedor -->
-        <article class="bg-card-blue text-white rounded-md shadow-md overflow-hidden flex flex-col items-center pt-8 pb-6 px-6">
-            <!-- Avatar -->
-            <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-4">
-                <span class="text-4xl">👤</span>
-            </div>
-            <h2 class="text-xl font-semibold mb-4">Fornecedor</h2>
+<div class="space-y-10">
+    <!-- HERO -->
+    <section class="grid gap-8 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-center">
+        <div class="space-y-4">
+            <span
+                class="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary-strong">
+                Portal de Licitações Aspec SLE
+            </span>
 
-            <div class="bg-white/90 text-slate-800 rounded-md px-4 py-4 text-sm leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-                Nullam quis semper dolor. Nunc purus nisi, <span class="font-semibold">elementum</span> id.
-            </div>
-        </article>
+            <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
+                Conectando fornecedores, órgãos públicos e sociedade em um só lugar.
+            </h1>
 
-        <!-- Card: Comprador -->
-        <article class="bg-card-blue-strong text-white rounded-md shadow-md overflow-hidden flex flex-col items-center pt-8 pb-6 px-6">
-            <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-4">
-                <span class="text-4xl">👤</span>
-            </div>
-            <h2 class="text-xl font-semibold mb-4">Comprador</h2>
+            <p class="text-sm md:text-base text-slate-600 max-w-xl">
+                Cadastre-se como fornecedor, acompanhe processos de licitação em andamento e tenha acesso aos produtos
+                da Aspec Informática em uma experiência moderna e intuitiva.
+            </p>
 
-            <div class="bg-white/90 text-slate-800 rounded-md px-4 py-4 text-sm leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-                Nullam quis semper dolor. Nunc purus nisi, <span class="font-semibold">elementum</span> id.
-            </div>
-        </article>
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+                <NavLink href="/cadastro"
+                    class="inline-flex items-center justify-center bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5 py-2 rounded-full">
+                    Cadastrar fornecedor
+                </NavLink>
 
-        <!-- Card: Sociedade -->
-        <article class="bg-card-green text-white rounded-md shadow-md overflow-hidden flex flex-col items-center pt-8 pb-6 px-6">
-            <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-4">
-                <span class="text-4xl">👤</span>
-            </div>
-            <h2 class="text-xl font-semibold mb-4">Sociedade</h2>
+                <NavLink href="/processos"
+                    class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                    Ver processos abertos
+                </NavLink>
 
-            <div class="bg-white/90 text-slate-800 rounded-md px-4 py-4 text-sm leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-                Nullam quis semper dolor. Nunc purus nisi, <span class="font-semibold">elementum</span> id.
+                <p class="text-[11px] md:text-xs text-slate-500">
+                    Sem custo de cadastro. Acesso imediato à área do fornecedor.
+                </p>
             </div>
-        </article>
-    </div>
-</section>
+        </div>
+
+        <!-- Painel resumo -->
+        <div class="rounded-2xl border border-border-soft bg-header shadow-sm p-4 md:p-5 space-y-4">
+            <h2 class="text-sm font-medium text-slate-800">
+                Como a plataforma funciona?
+            </h2>
+
+            <ul class="space-y-3 text-xs text-slate-600">
+                <li class="flex gap-2">
+                    <span class="mt-0.5 text-primary">•</span>
+                    <span>
+                        <strong>Cadastro rápido</strong> de fornecedores com validação de dados cadastrais.
+                    </span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="mt-0.5 text-primary">•</span>
+                    <span>
+                        <strong>Acesso centralizado</strong> aos produtos da Aspec Informática e seus módulos.
+                    </span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="mt-0.5 text-primary">•</span>
+                    <span>
+                        <strong>Visão unificada</strong> dos processos de licitação em andamento.
+                    </span>
+                </li>
+            </ul>
+
+            <div class="rounded-xl bg-primary-soft/60 px-3 py-2 text-[11px] text-primary-strong">
+                Em breve: planos específicos e área dedicada para cada tipo de usuário da plataforma.
+            </div>
+        </div>
+    </section>
+
+    <!-- PERSONAS -->
+    <section class="space-y-4">
+        <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm md:text-base font-semibold text-slate-900">
+                Uma experiência pensada para cada perfil
+            </h2>
+            <span class="text-[11px] md:text-xs text-slate-500">
+                Fornecedores, compradores e sociedade conectados em um mesmo fluxo.
+            </span>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+            @foreach (var p in personas)
+            {
+                <article
+                    class="@($"rounded-2xl border border-border-soft bg-card-bg shadow-sm overflow-hidden flex flex-col {p.Color}")">
+                    <div class="p-4 flex items-center gap-3">
+                        <div class="h-10 w-10 rounded-full bg-white/80 flex items-center justify-center text-lg">
+                            @p.Icon
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-900">@p.Title</h3>
+                            <p class="text-[11px] text-slate-500">@p.Pill</p>
+                        </div>
+                    </div>
+
+                    <div class="px-4 pb-4 space-y-2 text-xs text-slate-700">
+                        <p>@p.Description</p>
+                        <p class="text-[11px] font-medium text-slate-600">
+                            @p.Highlight
+                        </p>
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private record Persona(
+    string Title,
+    string Description,
+    string Highlight,
+    string Color,
+    string Pill,
+    string Icon
+    );
+
+    private readonly Persona[] personas = new[]
+    {
+new Persona(
+"Fornecedor",
+"Cadastre-se para participar de licitações, acompanhar editais e enviar propostas de forma simplificada.",
+"Ideal para empresas que vendem para o poder público.",
+"bg-emerald-50",
+"Participar de licitações",
+"🏢"
+),
+new Persona(
+"Comprador",
+"Gerencie processos, organize documentos e tenha uma visão clara das etapas de cada licitação.",
+"Transparência e rastreabilidade em cada fase.",
+"bg-sky-50",
+"Gestão de processos",
+"📈"
+),
+new Persona(
+"Sociedade",
+"Acompanhe licitações públicas, visualize resultados e fortaleça o controle social.",
+"Mais transparência nas contratações públicas.",
+"bg-violet-50",
+"Transparência",
+"📣"
+)
+};
+}

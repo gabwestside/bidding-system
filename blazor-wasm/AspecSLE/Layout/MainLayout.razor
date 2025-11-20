@@ -1,71 +1,10 @@
-﻿@inherits LayoutComponentBase
+﻿@using AspecSLE.Shared
+@inherits LayoutComponentBase
 
-<div class="min-h-screen bg-surface font-sans flex flex-col">
-    <!-- Barra superior (título / logo) -->
-    <header class="bg-primary text-white shadow">
-        <!-- Linha 1: logo + título -->
-        <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <!-- “Hamburger” -->
-                <button class="w-8 h-8 flex flex-col justify-center gap-1">
-                    <span class="h-0.5 bg-white"></span>
-                    <span class="h-0.5 bg-white"></span>
-                    <span class="h-0.5 bg-white"></span>
-                </button>
+<div class="min-h-screen bg-bg font-sans text-slate-900">
+    <Header />
 
-                <div class="flex items-center gap-2">
-                    <!-- Logo simples -->
-                    <div class="w-10 h-10 border border-white/50 flex items-center justify-center text-xs font-bold">
-                        ASPEC
-                    </div>
-                    <span class="text-lg font-semibold">AspecNet - Licitações e Contratos</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Linha 2: barra de endereço -->
-        <div class="bg-primary-light/90 border-y border-primary-light/40">
-            <div class="max-w-6xl mx-auto px-4 py-1.5 flex items-center gap-3 text-sm">
-                <span class="border border-white/60 px-2 py-0.5">&lt;</span>
-                <span class="border border-white/60 px-2 py-0.5">&gt;</span>
-
-                <div class="flex-1 bg-white text-slate-800 px-3 py-1 rounded-sm text-xs">
-                    http://www.aspecnet.com.br/
-                </div>
-            </div>
-        </div>
-
-        <!-- Linha 3: menu principal + usuário -->
-        <nav class="bg-white">
-            <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between border-b border-primary-light">
-                <!-- Menu -->
-                <div class="flex flex-wrap gap-2 text-sm">
-                    @foreach (var item in new[] { "Início", "Processos", "Produtos", "Planos", "Contato", "Entrar", "Cadastro" })
-                    {
-                        <button class="px-4 py-1.5 border border-primary-light rounded-sm text-primary-light hover:bg-primary-light hover:text-white transition text-xs">
-                            @item
-                        </button>
-                    }
-                </div>
-
-                <!-- Caixa de usuário -->
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-2 border border-primary-light px-3 py-1.5 rounded-sm text-xs text-primary-light bg-white">
-                        <div class="w-7 h-7 border border-primary-light flex items-center justify-center">
-                            <span class="material-symbols-outlined text-xs">person</span>
-                            <!-- se não tiver ícones, pode deixar só um "👤" -->
-                        </div>
-                        <span>Usuário</span>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </header>
-
-    <!-- Conteúdo -->
-    <main class="flex-1">
-        <div class="max-w-6xl mx-auto px-4 py-8">
-            @Body
-        </div>
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        @Body
     </main>
 </div>

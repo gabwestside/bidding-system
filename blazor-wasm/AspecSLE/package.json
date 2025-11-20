@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "dev": "dotnet watch run",
     "watch": "npx tailwindcss -i ./Themes/Theme.css -o ./wwwroot/css/theme.css --watch",
     "build": "npx tailwindcss -i ./Themes/Theme.css -o ./wwwroot/css/theme.min.css --minify"
   },
