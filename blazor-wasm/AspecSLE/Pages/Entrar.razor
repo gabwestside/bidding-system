@@ -1,109 +1,120 @@
 @page "/entrar"
+
 <PageTitle>Entrar</PageTitle>
+
 <div class="min-h-[calc(100vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
     <div class="w-full max-w-md">
         <!-- Trilha simples -->
         <div class="text-[11px] text-slate-500 mb-2">
             <span class="text-primary font-medium">Entrar</span>
         </div>
+
         <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
-            <!-- Cabe?alho -->
+            <!-- Cabeçalho -->
             <div class="px-5 pt-4 pb-3 text-center">
-                <h1 class="text-lg font-semibold tracking-tight text-slate-900">Entrar na plataforma</h1>
-                <p class="text-[11px] text-slate-500">Acesse sua ?rea de fornecedor com CPF e senha cadastrados.</p>
+                <h1 class="text-lg font-semibold tracking-tight text-slate-900">
+                    Entrar na plataforma
+                </h1>
+                <p class="text-[11px] text-slate-500">
+                    Acesse sua área de fornecedor com CPF e senha cadastrados.
+                </p>
             </div>
+
             <div class="px-5 pb-4 space-y-4">
                 <!-- CPF -->
                 <div class="space-y-1.5">
                     <label for="cpf" class="text-xs text-slate-700">
-                        Login CPF
-                        <span class="font-normal">(somente n?meros)</span>
+                        Login CPF <span class="font-normal">(somente números)</span>
                     </label>
-                    <input
-                        id="cpf"
-                        type="text"
-                        inputmode="numeric"
-                        autocomplete="username"
-                        placeholder="CPF do usu?rio"
-                        class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                        @bind="Cpf"
-                        @bind:event="oninput" />
+                    <input id="cpf"
+                           type="text"
+                           inputmode="numeric"
+                           autocomplete="username"
+                           placeholder="CPF do usuário"
+                           class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           @bind="Cpf"
+                           @bind:event="oninput" />
                     @if (!string.IsNullOrEmpty(CpfError))
                     {
-                        <p class="text-[11px] text-red-500 mt-0.5">
-                        @CpfError
-                        </p>
+                        <p class="text-[11px] text-red-500 mt-0.5">@CpfError</p>
                     }
                 </div>
+
                 <!-- Senha -->
                 <div class="space-y-1.5">
                     <label for="password" class="text-xs text-slate-700">
                         Senha
                     </label>
-                    <input
-                        id="password"
-                        type="@PasswordInputType"
-                        autocomplete="current-password"
-                        placeholder="Senha do usu?rio"
-                        class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                        @bind="Password"
-                        @bind:event="oninput" />
+                    <input id="password"
+                           type="@PasswordInputType"
+                           autocomplete="current-password"
+                           placeholder="Senha do usuário"
+                           class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           @bind="Password"
+                           @bind:event="oninput" />
+
                     <div class="flex items-center justify-between mt-1">
                         <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                class="h-3.5 w-3.5 rounded border border-border-soft"
-                                @bind="ShowPassword" />
+                            <input type="checkbox"
+                                   class="h-3.5 w-3.5 rounded border border-border-soft"
+                                   @bind="ShowPassword" />
                             <span>Mostrar senha</span>
                         </label>
-                        <NavLink href="/recuperar-senha" class="text-[11px] text-primary hover:text-primary-strong">
+
+                        <NavLink href="/recuperar-senha"
+                                 class="text-[11px] text-primary hover:text-primary-strong">
                             Esqueceu sua senha?
                         </NavLink>
                     </div>
+
                     @if (!string.IsNullOrEmpty(PasswordError))
                     {
-                        <p class="text-[11px] text-red-500 mt-0.5">
-                        @PasswordError
-                        </p>
+                        <p class="text-[11px] text-red-500 mt-0.5">@PasswordError</p>
                     }
+
                     @if (Attempts > 0 && !IsBlocked)
                     {
                         <p class="text-[11px] text-slate-500 mt-0.5">
-                            Tentativa@Attempts de@MaxAttempts .
+                            Tentativa @Attempts de @MaxAttempts.
                         </p>
                     }
                 </div>
-                <!-- N?o sou um rob? -->
+
+                <!-- Não sou um robô -->
                 <div class="space-y-1.5">
                     <label class="inline-flex items-center gap-2 text-[11px] text-slate-700 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            class="h-4 w-4 rounded border border-border-soft"
-                            @bind="CaptchaChecked" />
-                        <span>N?o sou um rob?</span>
+                        <input type="checkbox"
+                               class="h-4 w-4 rounded border border-border-soft"
+                               @bind="CaptchaChecked" />
+                        <span>Não sou um robô</span>
                     </label>
+
                     <!-- Placeholder para reCAPTCHA -->
-                    <div class="rounded-md border border-border-soft bg-card-muted px-3 py-2 text-[10px] text-slate-500">?rea reservada para o componente de verifica??o (reCAPTCHA).</div>
+                    <div class="rounded-md border border-border-soft bg-card-muted px-3 py-2 text-[10px] text-slate-500">
+                        Área reservada para o componente de verificação (reCAPTCHA).
+                    </div>
+
                     @if (!string.IsNullOrEmpty(CaptchaError))
                     {
-                        <p class="text-[11px] text-red-500 mt-0.5">
-                        @CaptchaError
-                        </p>
+                        <p class="text-[11px] text-red-500 mt-0.5">@CaptchaError</p>
                     }
                 </div>
             </div>
+
             <div class="px-5 pb-4 pt-2 flex flex-col gap-3">
-                <button
-                    type="button"
-                    @onclick="OnSubmit"
-                    disabled="@IsSubmitDisabled"
-                    class="h-9 w-full rounded-full bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed">
+                <button type="button"
+                        @onclick="OnSubmit"
+                        disabled="@IsSubmitDisabled"
+                        class="h-9 w-full rounded-full bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed">
                     Entrar
                 </button>
+
                 <div class="h-px w-full bg-border-soft/70"></div>
+
                 <div class="w-full text-center text-[11px] text-slate-600 pb-1">
-                    Ainda n?o tem cadastro?
-                    <NavLink href="/cadastro" class="ml-1 text-primary font-medium hover:text-primary-strong">
+                    Ainda não tem cadastro?
+                    <NavLink href="/cadastro"
+                             class="ml-1 text-primary font-medium hover:text-primary-strong">
                         Crie sua conta de fornecedor
                     </NavLink>
                 </div>
@@ -112,10 +123,9 @@
     </div>
 </div>
 
-@code
-{
+@code {
+    // Campos
     private string _cpf = string.Empty;
-
     private string Cpf
     {
         get => _cpf;
@@ -128,7 +138,6 @@
     }
 
     private string _password = string.Empty;
-
     private string Password
     {
         get => _password;
@@ -143,17 +152,15 @@
     private bool ShowPassword { get; set; }
 
     private bool CaptchaChecked { get; set; }
-
     private string? CaptchaError { get; set; }
 
+    // Erros
     private string? CpfError { get; set; }
-
     private string? PasswordError { get; set; }
 
+    // Tentativas
     private int Attempts { get; set; }
-
     private const int MaxAttempts = 3;
-
     private bool IsBlocked { get; set; }
 
     private string PasswordInputType => ShowPassword ? "text" : "password";
@@ -169,11 +176,11 @@
         if (!isValid)
             return;
 
-        // Aqui entraria a chamada real de autentica??o no backend:
+        // Aqui entraria a chamada real de autenticação no backend:
         //
         // var result = await AuthService.LoginAsync(cpfDigits, Password);
-        // if result == UsuarioNaoEncontrado => CpfError = "Usu?rio n?o encontrado";
-        // if result == ContaPendente => CpfError = "Conta aguardando confirma??o por email";
+        // if result == UsuarioNaoEncontrado => CpfError = "Usuário não encontrado";
+        // if result == ContaPendente => CpfError = "Conta aguardando confirmação por email";
         // etc.
 
         // Por enquanto, simulamos falha de senha para demonstrar limite de tentativas
@@ -182,11 +189,11 @@
         if (Attempts >= MaxAttempts)
         {
             IsBlocked = true;
-            PasswordError = "Voc? excedeu o limite de tentativas. Sua conta est? bloqueada!.";
+            PasswordError = "Você excedeu o limite de tentativas. Sua conta está bloqueada!.";
         }
         else
         {
-            PasswordError = "Senha inv?lida";
+            PasswordError = "Senha inválida";
         }
 
         await Task.CompletedTask;
@@ -200,31 +207,31 @@
         var cpfDigits = new string(Cpf.Where(char.IsDigit).ToArray());
         if (string.IsNullOrWhiteSpace(cpfDigits))
         {
-            CpfError = "Campo obrigat?rio";
+            CpfError = "Campo obrigatório";
             valid = false;
         }
         else if (cpfDigits.Length != 11 || !IsValidCpf(cpfDigits))
         {
-            CpfError = "CPF inv?lido";
+            CpfError = "CPF inválido";
             valid = false;
         }
 
         // Senha
         if (string.IsNullOrWhiteSpace(Password))
         {
-            PasswordError = "Campo obrigat?rio";
+            PasswordError = "Campo obrigatório";
             valid = false;
         }
         else if (Password.Length < 8 || Password.Length > 16)
         {
-            PasswordError = "Senha inv?lida";
+            PasswordError = "Senha inválida";
             valid = false;
         }
 
         // Captcha
         if (!CaptchaChecked)
         {
-            CaptchaError = "Confirme que voc? n?o ? um rob?!";
+            CaptchaError = "Confirme que você não é um robô!";
             valid = false;
         }
         else
@@ -237,17 +244,17 @@
 
     private static bool IsValidCpf(string cpfDigits)
     {
-        // precisa ter exatamente 11 d?gitos
+        // precisa ter exatamente 11 dígitos
         if (string.IsNullOrWhiteSpace(cpfDigits) || cpfDigits.Length != 11 || !cpfDigits.All(char.IsDigit))
             return false;
 
-        // rejeita CPFs com todos os d?gitos iguais
+        // rejeita CPFs com todos os dígitos iguais
         if (cpfDigits.Distinct().Count() == 1)
             return false;
 
         var nums = cpfDigits.Select(c => c - '0').ToArray();
 
-        // primeiro d?gito verificador
+        // primeiro dígito verificador
         var sum1 = 0;
         for (var i = 0; i < 9; i++)
             sum1 += nums[i] * (10 - i);
@@ -256,7 +263,7 @@
         if (dv1 == 10) dv1 = 0;
         if (dv1 != nums[9]) return false;
 
-        // segundo d?gito verificador
+        // segundo dígito verificador
         var sum2 = 0;
         for (var i = 0; i < 10; i++)
             sum2 += nums[i] * (11 - i);
@@ -280,7 +287,7 @@
         if (digits.Length <= 9)
             return $"{digits[..3]}.{digits[3..6]}.{digits[6..]}";
 
-        // 10 ou 11 d?gitos
+        // 10 ou 11 dígitos
         return $"{digits[..3]}.{digits[3..6]}.{digits[6..9]}-{digits[9..]}";
     }
 }
