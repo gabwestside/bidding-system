@@ -1,10 +1,10 @@
 @page "/entrar"
+@inject IJSRuntime JS
 
 <PageTitle>Entrar</PageTitle>
 
 <div class="min-h-[calc(100vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
     <div class="w-full max-w-md">
-        <!-- Trilha simples -->
         <div class="text-[11px] text-slate-500 mb-2">
             <span class="text-primary font-medium">Entrar</span>
         </div>
@@ -80,19 +80,13 @@
                     }
                 </div>
 
-                <!-- Não sou um robô -->
+                <!-- reCAPTCHA -->
                 <div class="space-y-1.5">
-                    <label class="inline-flex items-center gap-2 text-[11px] text-slate-700 cursor-pointer">
-                        <input type="checkbox"
-                               class="h-4 w-4 rounded border border-border-soft"
-                               @bind="CaptchaChecked" />
-                        <span>Não sou um robô</span>
+                    <label class="text-[11px] text-slate-700">
+                        Não sou um robô
                     </label>
 
-                    <!-- Placeholder para reCAPTCHA -->
-                    <div class="rounded-md border border-border-soft bg-card-muted px-3 py-2 text-[10px] text-slate-500">
-                        Área reservada para o componente de verificação (reCAPTCHA).
-                    </div>
+                    <div id="recaptcha-container" class="mt-1"></div>
 
                     @if (!string.IsNullOrEmpty(CaptchaError))
                     {
@@ -103,7 +97,7 @@
 
             <div class="px-5 pb-4 pt-2 flex flex-col gap-3">
                 <button type="button"
-                        @onclick="OnSubmit"
+                        @onclick="OnSubmitAsync"
                         disabled="@IsSubmitDisabled"
                         class="h-9 w-full rounded-full bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed">
                     Entrar
@@ -124,7 +118,7 @@
 </div>
 
 @code {
-    // Campos
+    // ===== Campos básicos =====
     private string _cpf = string.Empty;
     private string Cpf
     {
@@ -151,39 +145,59 @@
 
     private bool ShowPassword { get; set; }
 
-    private bool CaptchaChecked { get; set; }
-    private string? CaptchaError { get; set; }
-
-    // Erros
     private string? CpfError { get; set; }
     private string? PasswordError { get; set; }
+    private string? CaptchaError { get; set; }
 
-    // Tentativas
     private int Attempts { get; set; }
     private const int MaxAttempts = 3;
     private bool IsBlocked { get; set; }
 
     private string PasswordInputType => ShowPassword ? "text" : "password";
 
-    private bool IsSubmitDisabled => IsBlocked || !CaptchaChecked;
+    // reCAPTCHA
+    private string? RecaptchaToken { get; set; }
 
-    private async Task OnSubmit()
+    // desabilita só quando bloqueado (o reCAPTCHA em si impede o envio)
+    private bool IsSubmitDisabled => IsBlocked;
+
+    // coloque sua SITE KEY aqui ou leia de config
+    private const string RecaptchaSiteKey = "6LdRVBQsAAAAAEddgpn2_Cnjt_O_gtcWth2xoY8N";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // inicializa o widget reCAPTCHA
+            await JS.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
+        }
+    }
+
+    private async Task OnSubmitAsync()
     {
         if (IsBlocked)
             return;
 
-        var isValid = ValidateForm();
-        if (!isValid)
+        var isValidFields = ValidateFormWithoutCaptcha();
+        if (!isValidFields)
             return;
 
-        // Aqui entraria a chamada real de autenticação no backend:
-        //
-        // var result = await AuthService.LoginAsync(cpfDigits, Password);
-        // if result == UsuarioNaoEncontrado => CpfError = "Usuário não encontrado";
-        // if result == ContaPendente => CpfError = "Conta aguardando confirmação por email";
-        // etc.
+        // pega o token do reCAPTCHA
+        RecaptchaToken = await JS.InvokeAsync<string>("recaptchaInterop.getResponse");
 
-        // Por enquanto, simulamos falha de senha para demonstrar limite de tentativas
+        if (string.IsNullOrWhiteSpace(RecaptchaToken))
+        {
+            CaptchaError = "Confirme que você não é um robô!";
+            return;
+        }
+
+        CaptchaError = null;
+
+        // >>> AQUI você chama o backend passando cpf, senha e RecaptchaToken <<<
+        // var result = await AuthService.LoginAsync(cpfDigits, Password, RecaptchaToken);
+        // Se backend disser que o captcha falhou => CaptchaError = "Confirme que você não é um robô!";
+
+        // Por enquanto vamos simular falha de senha para demonstrar limite de tentativas
         Attempts++;
 
         if (Attempts >= MaxAttempts)
@@ -196,10 +210,11 @@
             PasswordError = "Senha inválida";
         }
 
-        await Task.CompletedTask;
+        // opcional: resetar o reCAPTCHA a cada tentativa
+        await JS.InvokeVoidAsync("recaptchaInterop.reset");
     }
 
-    private bool ValidateForm()
+    private bool ValidateFormWithoutCaptcha()
     {
         var valid = true;
 
@@ -228,46 +243,29 @@
             valid = false;
         }
 
-        // Captcha
-        if (!CaptchaChecked)
-        {
-            CaptchaError = "Confirme que você não é um robô!";
-            valid = false;
-        }
-        else
-        {
-            CaptchaError = null;
-        }
-
         return valid;
     }
 
     private static bool IsValidCpf(string cpfDigits)
     {
-        // precisa ter exatamente 11 dígitos
         if (string.IsNullOrWhiteSpace(cpfDigits) || cpfDigits.Length != 11 || !cpfDigits.All(char.IsDigit))
             return false;
 
-        // rejeita CPFs com todos os dígitos iguais
         if (cpfDigits.Distinct().Count() == 1)
             return false;
 
         var nums = cpfDigits.Select(c => c - '0').ToArray();
 
-        // primeiro dígito verificador
         var sum1 = 0;
         for (var i = 0; i < 9; i++)
             sum1 += nums[i] * (10 - i);
-
         var dv1 = (sum1 * 10) % 11;
         if (dv1 == 10) dv1 = 0;
         if (dv1 != nums[9]) return false;
 
-        // segundo dígito verificador
         var sum2 = 0;
         for (var i = 0; i < 10; i++)
             sum2 += nums[i] * (11 - i);
-
         var dv2 = (sum2 * 10) % 11;
         if (dv2 == 10) dv2 = 0;
 
@@ -287,7 +285,6 @@
         if (digits.Length <= 9)
             return $"{digits[..3]}.{digits[3..6]}.{digits[6..]}";
 
-        // 10 ou 11 dígitos
         return $"{digits[..3]}.{digits[3..6]}.{digits[6..9]}-{digits[9..]}";
     }
 }
