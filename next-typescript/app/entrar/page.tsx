@@ -79,15 +79,25 @@ export default function LoginPage() {
     }
 
     const grecaptcha = (window as any).grecaptcha
-    if (!grecaptcha || !recaptchaContainerRef.current) return
-    if (recaptchaWidgetId.current !== null) return // já renderizado
+    if (!grecaptcha) {
+      console.error('grecaptcha ainda não está disponível')
+      return
+    }
 
-    recaptchaWidgetId.current = grecaptcha.render(
-      recaptchaContainerRef.current,
-      {
-        sitekey: siteKey,
-      }
-    )
+    if (!recaptchaContainerRef.current) return
+
+    // AQUI é o pulo do gato: usar ready()
+    grecaptcha.ready(() => {
+      // evita renderizar duas vezes
+      if (recaptchaWidgetId.current !== null) return
+
+      recaptchaWidgetId.current = grecaptcha.render(
+        recaptchaContainerRef.current!,
+        {
+          sitekey: siteKey,
+        }
+      )
+    })
   }
 
   const getRecaptchaToken = (): string => {
