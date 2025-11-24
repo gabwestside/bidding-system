@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useRef } from 'react'
-import Script from 'next/script'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -13,47 +10,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-
-function formatCpfMask(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-
-  const part1 = digits.slice(0, 3)
-  const part2 = digits.slice(3, 6)
-  const part3 = digits.slice(6, 9)
-  const part4 = digits.slice(9, 11)
-
-  let result = part1
-  if (part2) result += '.' + part2
-  if (part3) result += '.' + part3
-  if (part4) result += '-' + part4
-
-  return result
-}
-
-function isValidCpf(cpfDigits: string): boolean {
-  if (!/^\d{11}$/.test(cpfDigits)) return false
-  if (/^(\d)\1{10}$/.test(cpfDigits)) return false
-
-  const nums = cpfDigits.split('').map(Number)
-
-  let sum1 = 0
-  for (let i = 0; i < 9; i++) sum1 += nums[i] * (10 - i)
-  let dv1 = (sum1 * 10) % 11
-  if (dv1 === 10) dv1 = 0
-  if (dv1 !== nums[9]) return false
-
-  let sum2 = 0
-  for (let i = 0; i < 10; i++) sum2 += nums[i] * (11 - i)
-  let dv2 = (sum2 * 10) % 11
-  if (dv2 === 10) dv2 = 0
-  if (dv2 !== nums[10]) return false
-
-  return true
-}
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/context/auth-context'
+import { formatCpfMask, isValidCpf } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import Script from 'next/script'
+import { useRef, useState } from 'react'
 
 export default function LoginPage() {
+  const { login } = useAuth()
+  const router = useRouter()
+
   const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -62,15 +32,15 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [captchaError, setCaptchaError] = useState<string | null>(null)
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [attempts, setAttempts] = useState(0)
   const [blocked, setBlocked] = useState(false)
   const maxAttempts = 3
 
-  // reCAPTCHA
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null)
   const recaptchaWidgetId = useRef<number | null>(null)
 
-  // script do recaptcha carregou
   const handleRecaptchaLoad = () => {
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
     if (!siteKey) {
@@ -86,9 +56,7 @@ export default function LoginPage() {
 
     if (!recaptchaContainerRef.current) return
 
-    // AQUI é o pulo do gato: usar ready()
     grecaptcha.ready(() => {
-      // evita renderizar duas vezes
       if (recaptchaWidgetId.current !== null) return
 
       recaptchaWidgetId.current = grecaptcha.render(
@@ -127,7 +95,6 @@ export default function LoginPage() {
     let valid = true
     const cpfDigits = cpf.replace(/\D/g, '')
 
-    // CPF
     if (!cpfDigits) {
       setCpfError('Campo obrigatório')
       valid = false
@@ -136,7 +103,6 @@ export default function LoginPage() {
       valid = false
     }
 
-    // senha
     if (!password) {
       setPasswordError('Campo obrigatório')
       valid = false
@@ -150,48 +116,29 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (blocked) return
+    if (blocked || isSubmitting) return
 
     setCaptchaError(null)
 
     const { ok, cpfDigits } = validateFormWithoutCaptcha()
     if (!ok || !cpfDigits) return
 
-    // pega token do reCAPTCHA
     const token = getRecaptchaToken()
     if (!token) {
       setCaptchaError('Confirme que você não é um robô!')
       return
     }
 
-    // >>> Chamada para a API de login (backend) <<<
+    setIsSubmitting(true)
+
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cpf: cpfDigits,
-          password,
-          recaptchaToken: token,
-        }),
-      })
+      const result = await login(cpfDigits, password)
 
-      const data = await res.json()
+      if (!result.ok) {
+        setPasswordError(result.error ?? 'Erro ao autenticar.')
 
-      if (!res.ok || !data.ok) {
-        // mapeia erro de volta para o campo certo
-        if (data.field === 'cpf') {
-          setCpfError(data.message)
-        } else if (data.field === 'password') {
-          setPasswordError(data.message)
-        } else if (data.field === 'captcha') {
-          setCaptchaError(data.message)
-        }
-
-        // controla tentativas (aqui estou contando qualquer falha de login)
         const newAttempts = attempts + 1
         setAttempts(newAttempts)
-
         if (newAttempts >= maxAttempts) {
           setBlocked(true)
           setPasswordError(
@@ -203,19 +150,14 @@ export default function LoginPage() {
         return
       }
 
-      // sucesso: aqui você pode redirecionar para a home ou dashboard
-      // por exemplo: router.push("/"); (usando useRouter)
-      console.log('Login OK', data)
-    } catch (err) {
-      console.error(err)
-      setPasswordError('Erro ao autenticar. Tente novamente.')
-      resetRecaptcha()
+      router.push('/')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <>
-      {/* script do reCAPTCHA v2 */}
       <Script
         src='https://www.google.com/recaptcha/api.js?render=explicit'
         strategy='afterInteractive'
@@ -263,7 +205,6 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Senha */}
                 <div className='space-y-1.5'>
                   <Label htmlFor='password' className='text-xs text-slate-700'>
                     Senha
@@ -310,7 +251,6 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* reCAPTCHA */}
                 <div className='space-y-1.5'>
                   <Label className='text-[11px] text-slate-700'>
                     Não sou um robô
@@ -331,10 +271,16 @@ export default function LoginPage() {
               <CardFooter className='flex flex-col gap-3 pt-2'>
                 <Button
                   type='submit'
-                  disabled={blocked}
+                  disabled={blocked || isSubmitting}
                   className='w-full bg-primary text-white hover:bg-primary-strong h-9 text-sm disabled:opacity-60 disabled:cursor-not-allowed'
                 >
-                  Entrar
+                  {isSubmitting && (
+                    <Loader2
+                      className='mr-2 h-4 w-4 animate-spin'
+                      aria-hidden='true'
+                    />
+                  )}
+                  {isSubmitting ? 'Entrando...' : 'Entrar'}
                 </Button>
 
                 <div className='h-px w-full bg-border-soft/70' />
