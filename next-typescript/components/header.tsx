@@ -1,10 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/context/auth-context'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useAuth } from '@/context/auth-context'
+import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const mainNav = [
   { label: 'Início', href: '/' },
@@ -44,9 +45,17 @@ export function Header() {
         <div className='flex items-center gap-3'>
           <Link href='/' className='flex items-center gap-2'>
             <div className='h-10 w-auto flex items-center'>
-              <span className='h-9 w-24 border border-primary/40 flex items-center justify-center text-xs font-semibold text-primary tracking-wide'>
+              {/* <span className='h-9 w-24 border border-primary/40 flex items-center justify-center text-xs font-semibold text-primary tracking-wide'>
                 ASPEC
-              </span>
+              </span> */}
+
+              <Image
+                src='https://aspec.com.br/wp-content/themes/site/img/logo-aspec.svg'
+                alt='ASPEC Logo'
+                className='h-9 ml-2'
+                width={96}
+                height={36}
+              />
             </div>
             <div className='leading-tight hidden sm:block'>
               <p className='text-sm font-semibold text-slate-900'>Aspec SLE</p>
@@ -72,7 +81,7 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        
+
         <div className='flex items-center gap-3'>
           {!user && (
             <div className='flex items-center gap-2'>
@@ -94,7 +103,7 @@ export function Header() {
               </Button>
             </div>
           )}
-          
+
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger className='flex items-center gap-2 rounded-full border border-border-soft px-2 py-1 text-xs text-slate-600 hover:border-primary hover:bg-primary-soft/60'>
