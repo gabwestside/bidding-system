@@ -16,6 +16,9 @@ import { CheckCircle2, Info, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://localhost:5001'
+
 function formatCpfMask(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11)
 
@@ -81,7 +84,7 @@ export default function CadastroPage() {
   const allPasswordRulesOk =
     hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial
 
-  function validate(): boolean {
+  function validate(): { ok: boolean; cpfDigits?: string } {
     const newErrors: Record<string, string | null> = {}
 
     // Nome completo
@@ -138,7 +141,9 @@ export default function CadastroPage() {
     }
 
     setErrors(newErrors)
-    return Object.values(newErrors).every((v) => !v)
+    const ok = Object.values(newErrors).every((v) => !v)
+
+    return { ok, cpfDigits: ok ? cpfDigits : undefined }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -147,20 +152,84 @@ export default function CadastroPage() {
 
     setSuccessMessage(null)
 
-    const ok = validate()
-    if (!ok) return
+    const { ok, cpfDigits } = validate()
+    if (!ok || !cpfDigits) return
 
     setIsSubmitting(true)
 
     try {
-      // Aqui entraria a chamada real para o backend
-      await new Promise((resolve) => setTimeout(resolve, 900)) // simulação rápida
+      // separa nome em firstName / lastName
+      const parts = nome.trim().split(/\s+/)
+      const firstName = parts[0]
+      const lastName = parts.length > 1 ? parts.slice(1).join(' ') : ''
+
+      const payload = {
+        email: email.trim(),
+        password,
+        confirmPassword,
+        firstName,
+        lastName,
+        cpf: cpfDigits,
+        role: 'Admin' as const,
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        let detail: string | undefined
+        try {
+          const problem = (await res.json()) as {
+            detail?: string
+            title?: string
+          }
+          detail = problem.detail ?? problem.title
+        } catch {
+          // ignore
+        }
+
+        setErrors((prev) => ({
+          ...prev,
+          global:
+            detail ??
+            `Erro ao realizar o cadastro (status ${res.status}). Tente novamente.`,
+        }))
+        return
+      }
+
+      // resposta bem-sucedida em JSON
+      const data = (await res.json()) as {
+        success?: boolean
+        message?: string
+      }
+
+      if (data.success === false) {
+        setErrors((prev) => ({
+          ...prev,
+          global: data.message ?? 'Falha ao realizar o cadastro.',
+        }))
+        return
+      }
 
       setSuccessMessage(
         'Um link de confirmação foi enviado ao seu e-mail. Para concluir o cadastro, acesse o link de confirmação enviado e insira a senha informada no momento do cadastro.'
       )
+
+      // limpe os campos após sucesso
+      setNome('')
+      setCpf('')
+      setEmail('')
+      setConfirmEmail('')
+      setPassword('')
+      setConfirmPassword('')
+      setShowPassword(false)
+      setShowConfirmPassword(false)
+      setErrors({})
     } catch (err) {
-      console.error('Erro no cadastro:', err)
+      console.error(err)
       setErrors((prev) => ({
         ...prev,
         global: 'Ocorreu um erro ao realizar o cadastro. Tente novamente.',
@@ -402,7 +471,7 @@ export default function CadastroPage() {
                     </div>
                   </div>
 
-                  {/* Regras da senha (mais compacto) */}
+                  {/* Regras da senha (compacto) */}
                   <div className='rounded-md border border-border-soft bg-card-muted px-2.5 py-2.5'>
                     <div className='flex items-center text-[10px] text-slate-700 mb-1 font-medium'>
                       <Info className='h-3 w-3 mr-1.5' />
