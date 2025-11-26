@@ -12,6 +12,8 @@ import { AuthUser, loginRequest, LoginResponse } from '@/lib/api'
 type AuthState = {
   user: AuthUser | null
   token: string | null
+  expiresAt: string | null
+  isAuthenticated: boolean
   isLoading: boolean
   login: (
     cpf: string,
@@ -33,6 +35,7 @@ type StoredAuth = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -45,8 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed = JSON.parse(raw) as StoredAuth
 
-        setUser(parsed.user)
-        setToken(parsed.token)
+        const now = new Date()
+        const exp = new Date(parsed.expiresAt)
+        
+        if (isNaN(exp.getTime()) || exp <= now) {
+          window.localStorage.removeItem(STORAGE_KEY)
+        } else {
+          setUser(parsed.user)
+          setToken(parsed.token)
+          setExpiresAt(parsed.expiresAt)
+        }
       }
     } catch (err) {
       console.warn('Erro ao ler auth do localStorage', err)
@@ -73,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(user)
       setToken(token)
+      setExpiresAt(expiresAt)
 
       return { ok: true as const }
     } catch (err: unknown) {
@@ -85,13 +97,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    window.localStorage.removeItem(STORAGE_KEY)
-    
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(STORAGE_KEY)
+    }
+
     setUser(null)
     setToken(null)
+    setExpiresAt(null)
   }
+  
+  const isAuthenticated =
+    !!token &&
+    (!expiresAt || new Date(expiresAt).getTime() > new Date().getTime())
 
-  const value: AuthState = { user, token, isLoading, login, logout }
+  const value: AuthState = {
+    user,
+    token,
+    expiresAt,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
