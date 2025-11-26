@@ -7,6 +7,9 @@ import { AuthProvider } from '@/context/auth-context'
 export const metadata: Metadata = {
   title: 'Aspec SLE - Portal de Licitações',
   description: 'Plataforma de licitações integrada aos produtos Aspec.',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
