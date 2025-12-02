@@ -6,7 +6,7 @@ import {
   getFullName,
   getInitials,
   isValidPhone,
-  MeResponse,
+  ProfileResponse,
 } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -70,7 +70,7 @@ export default function EditarPerfilPage() {
         return
       }
 
-      const data = (await res.json()) as MeResponse
+      const data = (await res.json()) as ProfileResponse
 
       if (!data.success || !data.user) {
         setLoadError(data.message || 'Falha ao obter perfil.')

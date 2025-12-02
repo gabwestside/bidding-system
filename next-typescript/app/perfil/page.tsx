@@ -5,8 +5,8 @@ import {
   formatCreatedAt,
   formatPhone,
   getInitials,
-  MeResponse,
   Profile,
+  ProfileResponse,
 } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
@@ -60,7 +60,7 @@ export default function PerfilPage() {
         return
       }
 
-      const data = (await res.json()) as MeResponse
+      const data = (await res.json()) as ProfileResponse
 
       if (!data.success || !data.user) {
         setError(data.message || 'Falha ao obter perfil.')

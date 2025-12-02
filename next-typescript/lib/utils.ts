@@ -82,6 +82,14 @@ export type ConfirmEmailErrorResponse = {
   error?: string
 }
 
+export type ForgotPasswordSuccessResponse = {
+  message?: string
+}
+
+export type ForgotPasswordErrorResponse = {
+  error?: string
+}
+
 export const STORAGE_KEY = 'aspec-auth'
 
 export const API_BASE_URL =

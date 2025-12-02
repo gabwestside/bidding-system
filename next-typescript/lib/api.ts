@@ -3,6 +3,8 @@ import {
   ApiResult,
   ConfirmEmailErrorResponse,
   ConfirmEmailSuccessResponse,
+  ForgotPasswordErrorResponse,
+  ForgotPasswordSuccessResponse,
   LoginResponse,
   ProblemDetails,
   RegisterPayload,
@@ -126,6 +128,59 @@ export async function confirmEmailRequest(
     return {
       ok: false,
       message: err instanceof Error ? err.message : 'Erro ao confirmar email.',
+    }
+  }
+}
+
+export async function forgotPasswordRequest(
+  email: string,
+  cpfDigits: string,
+  recaptchaToken: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/forgot-password`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          cpf: cpfDigits,
+          recaptchaToken,
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      let msg = 'Ocorreu um erro interno.'
+      try {
+        const data = (await res.json()) as ForgotPasswordErrorResponse
+        msg = data?.error ?? msg
+      } catch {
+        // resposta não é JSON, mantém msg padrão
+      }
+      return { ok: false, message: msg }
+    }
+
+    let successMsg =
+      'Se o email existir, você receberá instruções para redefinir sua senha.'
+    try {
+      const data = (await res.json()) as ForgotPasswordSuccessResponse
+      successMsg = data?.message ?? successMsg
+    } catch {
+      // 200 sem body, mantém mensagem padrão
+    }
+
+    return { ok: true, message: successMsg }
+  } catch (err) {
+    return {
+      ok: false,
+      message:
+        err instanceof Error
+          ? err.message
+          : 'Erro ao solicitar redefinição de senha.',
     }
   }
 }
