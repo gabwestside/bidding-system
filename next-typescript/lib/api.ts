@@ -1,6 +1,8 @@
 import {
   API_BASE_URL,
   ApiResult,
+  ConfirmEmailErrorResponse,
+  ConfirmEmailSuccessResponse,
   LoginResponse,
   ProblemDetails,
   RegisterPayload,
@@ -80,6 +82,50 @@ export async function registerRequest(
         err instanceof Error
           ? err.message
           : 'Erro ao chamar serviço de cadastro.',
+    }
+  }
+}
+
+export async function confirmEmailRequest(
+  email: string,
+  token: string
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/confirm-email`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, token }),
+      }
+    )
+
+    if (!res.ok) {
+      let errorMsg = 'Erro ao confirmar email.'
+      try {
+        const data = (await res.json()) as ConfirmEmailErrorResponse
+        errorMsg = data?.error ?? errorMsg
+      } catch {
+        // resposta não é JSON, mantém mensagem padrão
+      }
+      return { ok: false, message: errorMsg }
+    }
+
+    let successMsg = 'Email confirmado com sucesso!'
+    try {
+      const data = (await res.json()) as ConfirmEmailSuccessResponse
+      successMsg = data?.message ?? successMsg
+    } catch {
+      // 200 sem body, mantém mensagem padrão
+    }
+
+    return { ok: true, message: successMsg }
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : 'Erro ao confirmar email.',
     }
   }
 }

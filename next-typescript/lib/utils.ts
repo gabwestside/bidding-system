@@ -74,6 +74,14 @@ export type StoredAuth = {
   expiresAt: string
 }
 
+export type ConfirmEmailSuccessResponse = {
+  message?: string
+}
+
+export type ConfirmEmailErrorResponse = {
+  error?: string
+}
+
 export const STORAGE_KEY = 'aspec-auth'
 
 export const API_BASE_URL =
