@@ -1,13 +1,13 @@
 'use client'
 
+import { AuthUser, loginRequest, LoginResponse } from '@/lib/api'
 import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useState,
-  ReactNode,
 } from 'react'
-import { AuthUser, loginRequest, LoginResponse } from '@/lib/api'
 
 type AuthState = {
   user: AuthUser | null
@@ -15,18 +15,36 @@ type AuthState = {
   expiresAt: string | null
   isAuthenticated: boolean
   isLoading: boolean
+
   login: (
     cpf: string,
     password: string
   ) => Promise<{ ok: boolean; error?: string }>
+
   logout: () => void
+
+  updateProfile: (
+    firstName: string,
+    lastName: string,
+    phoneDigits: string
+  ) => Promise<{ ok: boolean; message?: string }>
+}
+
+export type UpdateProfileResponse = {
+  message?: string
+}
+
+export type ProblemDetails = {
+  detail?: string
+  title?: string
+  message?: string
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
 const STORAGE_KEY = 'aspec-auth'
 
-type StoredAuth = {
+export type StoredAuth = {
   user: AuthUser
   token: string
   expiresAt: string
@@ -50,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const now = new Date()
         const exp = new Date(parsed.expiresAt)
-        
+
         if (isNaN(exp.getTime()) || exp <= now) {
           window.localStorage.removeItem(STORAGE_KEY)
         } else {
@@ -105,7 +123,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null)
     setExpiresAt(null)
   }
-  
+
+  const updateProfile = async (
+    firstName: string,
+    lastName: string,
+    phoneDigits: string
+  ): Promise<{ ok: boolean; message?: string }> => {
+    try {
+      if (!token) {
+        return { ok: false, message: 'Usuário não autenticado.' }
+      }
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/update-profile`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            phone: phoneDigits,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        let message = `Falha ao atualizar perfil (status ${res.status})`
+
+        try {
+          const prob = (await res.json()) as ProblemDetails
+          message = prob?.detail || prob?.title || prob?.message || message
+        } catch {
+          // resposta sem JSON, mantém mensagem padrão
+        }
+
+        return { ok: false, message }
+      }
+
+      let data: UpdateProfileResponse | undefined
+      try {
+        data = (await res.json()) as UpdateProfileResponse
+      } catch {
+        // 200 sem body é ok
+      }
+
+      if (user) {
+        const updatedUser: AuthUser = {
+          ...user,
+          firstName,
+          lastName,
+          fullName: `${firstName} ${lastName}`.trim(),
+          phone: phoneDigits,
+        }
+
+        setUser(updatedUser)
+
+        try {
+          const raw = window.localStorage.getItem(STORAGE_KEY)
+          if (raw) {
+            const stored = JSON.parse(raw) as StoredAuth
+            const newStored: StoredAuth = {
+              ...stored,
+              user: updatedUser,
+            }
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(newStored))
+          }
+        } catch {
+          // se der erro no localStorage, ignora
+        }
+      }
+
+      return {
+        ok: true,
+        message: data?.message ?? 'Perfil atualizado com sucesso.',
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        message:
+          err instanceof Error ? err.message : 'Erro ao atualizar perfil.',
+      }
+    }
+  }
+
   const isAuthenticated =
     !!token &&
     (!expiresAt || new Date(expiresAt).getTime() > new Date().getTime())
@@ -118,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     logout,
+    updateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

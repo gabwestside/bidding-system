@@ -291,7 +291,7 @@ export default function LoginPage() {
                     href='/cadastro'
                     className='ml-1 text-primary font-medium hover:text-primary-strong'
                   >
-                    Crie sua conta de fornecedor
+                    Crie sua conta
                   </Link>
                 </div>
               </CardFooter>

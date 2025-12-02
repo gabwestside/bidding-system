@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { AuthUser } from './api'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -56,3 +57,69 @@ export function formatCpfReadonlyMask(value: string) {
 }
 
 export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export type Profile = AuthUser & {
+  phone?: string | null
+  createdAt?: string | null
+}
+
+export type MeResponse = {
+  success: boolean
+  message?: string
+  user?: Profile
+}
+
+export function getInitials(name?: string | null): string {
+  if (!name) return ''
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return ''
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
+export function formatPhone(raw?: string | null): string {
+  if (!raw) return '-'
+  const digits = raw.replace(/\D/g, '').slice(0, 11)
+
+  if (!digits) return '-'
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  // 11 dígitos
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+export function formatCreatedAt(dateString?: string | null): string {
+  if (!dateString) return '-'
+  const d = new Date(dateString)
+  if (Number.isNaN(d.getTime())) return '-'
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const dd = pad(d.getDate())
+  const mm = pad(d.getMonth() + 1)
+  const yyyy = d.getFullYear()
+  const hh = pad(d.getHours())
+  const mi = pad(d.getMinutes())
+
+  return `${dd}/${mm}/${yyyy} às ${hh}:${mi}`
+}
+
+export function formatPhoneMask(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+
+  if (!digits) return ''
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+export function isValidPhone(digits: string) {
+  return digits.length === 10 || digits.length === 11
+}
+
+export function getFullName(firstName: string, lastName: string) {
+  return `${firstName ?? ''} ${lastName ?? ''}`.trim().replace(/\s+/g, ' ')
+}

@@ -7,6 +7,7 @@ export type AuthUser = {
   email: string
   firstName: string
   lastName: string
+  phone: string
   fullName: string
   tenantIdentifier: string
   createdAt: string

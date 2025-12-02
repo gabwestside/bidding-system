@@ -45,10 +45,6 @@ export function Header() {
         <div className='flex items-center gap-3'>
           <Link href='/' className='flex items-center gap-2'>
             <div className='h-10 w-auto flex items-center'>
-              {/* <span className='h-9 w-24 border border-primary/40 flex items-center justify-center text-xs font-semibold text-primary tracking-wide'>
-                ASPEC
-              </span> */}
-
               <Image
                 src='https://aspec.com.br/wp-content/themes/site/img/logo-aspec.svg'
                 alt='ASPEC Logo'
@@ -118,7 +114,9 @@ export function Header() {
               <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>{user.fullName}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Perfil</DropdownMenuItem>
+                <Link href='/perfil'>
+                  <DropdownMenuItem>Perfil</DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem>Configurações</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className='text-red-600' onClick={logout}>
