@@ -1,6 +1,14 @@
 'use client'
 
-import { AuthUser, loginRequest, LoginResponse } from '@/lib/api'
+import { loginRequest } from '@/lib/api'
+import {
+  AuthUser,
+  LoginResponse,
+  ProblemDetails,
+  STORAGE_KEY,
+  StoredAuth,
+  UpdateProfileResponse,
+} from '@/lib/utils'
 import {
   createContext,
   ReactNode,
@@ -30,25 +38,7 @@ type AuthState = {
   ) => Promise<{ ok: boolean; message?: string }>
 }
 
-export type UpdateProfileResponse = {
-  message?: string
-}
-
-export type ProblemDetails = {
-  detail?: string
-  title?: string
-  message?: string
-}
-
 const AuthContext = createContext<AuthState | undefined>(undefined)
-
-const STORAGE_KEY = 'aspec-auth'
-
-export type StoredAuth = {
-  user: AuthUser
-  token: string
-  expiresAt: string
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)

@@ -1,10 +1,87 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { AuthUser } from './api'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export type AuthUser = {
+  id: string
+  cpf: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string
+  fullName: string
+  tenantIdentifier: string
+  createdAt: string
+}
+
+export type LoginResponse = {
+  success: boolean
+  message: string
+  user: AuthUser
+  token: string
+  expiresAt: string
+}
+
+export type ProblemDetails = {
+  type?: string
+  title?: string
+  status?: number
+  detail?: string
+  instance?: string
+  message?: string
+}
+
+export type Profile = AuthUser & {
+  phone?: string | null
+  createdAt?: string | null
+}
+
+export type ProfileResponse = {
+  success: boolean
+  message?: string
+  user?: Profile
+}
+
+export type RegisterResponse = {
+  success: boolean
+  message?: string
+}
+
+export type UpdateProfileResponse = {
+  message?: string
+}
+
+export type RegisterPayload = {
+  email: string
+  password: string
+  confirmPassword: string
+  firstName: string
+  lastName: string
+  cpf: string
+  phone: string
+  role: string
+  recaptchaToken: string
+}
+
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+export type StoredAuth = {
+  user: AuthUser
+  token: string
+  expiresAt: string
+}
+
+export const STORAGE_KEY = 'aspec-auth'
+
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://localhost:5001'
+
+export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!
 
 export function formatCpfMask(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11)
@@ -56,19 +133,6 @@ export function formatCpfReadonlyMask(value: string) {
   )}-${digits.slice(9)}`
 }
 
-export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-export type Profile = AuthUser & {
-  phone?: string | null
-  createdAt?: string | null
-}
-
-export type MeResponse = {
-  success: boolean
-  message?: string
-  user?: Profile
-}
-
 export function getInitials(name?: string | null): string {
   if (!name) return ''
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -86,7 +150,7 @@ export function formatPhone(raw?: string | null): string {
   if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
   if (digits.length <= 10)
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
-  // 11 dígitos
+
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
@@ -113,6 +177,7 @@ export function formatPhoneMask(value: string) {
   if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
   if (digits.length <= 10)
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 

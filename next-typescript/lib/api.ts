@@ -1,33 +1,11 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://localhost:5001'
-
-export type AuthUser = {
-  id: string
-  cpf: string
-  email: string
-  firstName: string
-  lastName: string
-  phone: string
-  fullName: string
-  tenantIdentifier: string
-  createdAt: string
-}
-
-export type LoginResponse = {
-  success: boolean
-  message: string
-  user: AuthUser
-  token: string
-  expiresAt: string
-}
-
-export type ProblemDetails = {
-  type?: string
-  title?: string
-  status?: number
-  detail?: string
-  instance?: string
-}
+import {
+  API_BASE_URL,
+  ApiResult,
+  LoginResponse,
+  ProblemDetails,
+  RegisterPayload,
+  RegisterResponse,
+} from './utils'
 
 export async function loginRequest(
   cpf: string,
@@ -59,4 +37,49 @@ export async function loginRequest(
 
   const data = (await res.json()) as LoginResponse
   return data
+}
+
+export async function registerRequest(
+  payload: RegisterPayload
+): Promise<ApiResult<RegisterResponse>> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/register`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!res.ok) {
+      let msg = 'Falha ao realizar o cadastro.'
+      try {
+        const prob = await res.json()
+        msg = prob?.detail || prob?.title || prob?.message || msg
+      } catch {
+        // resposta não é JSON, mantém msg padrão
+      }
+      return { ok: false, error: msg }
+    }
+
+    let data: RegisterResponse = { success: true }
+    try {
+      data = (await res.json()) as RegisterResponse
+    } catch {
+      // 200 sem body: mantém success true com message padrão
+    }
+
+    return { ok: true, data }
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : 'Erro ao chamar serviço de cadastro.',
+    }
+  }
 }
