@@ -84,7 +84,7 @@ export default function HomePage() {
               asChild
               className='bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5'
             >
-              <Link href='/cadastro'>Cadastrar fornecedor</Link>
+              <Link href='/cadastro-fornecedor'>Cadastrar fornecedor</Link>
             </Button>
 
             <Button

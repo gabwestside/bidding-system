@@ -90,6 +90,14 @@ export type ForgotPasswordErrorResponse = {
   error?: string
 }
 
+export type ViaCepResponse = {
+  logradouro?: string
+  bairro?: string
+  localidade?: string
+  uf?: string
+  erro?: boolean
+}
+
 export const STORAGE_KEY = 'aspec-auth'
 
 export const API_BASE_URL =
@@ -204,3 +212,109 @@ export function isValidPhone(digits: string) {
 export function getFullName(firstName: string, lastName: string) {
   return `${firstName ?? ''} ${lastName ?? ''}`.trim().replace(/\s+/g, ' ')
 }
+
+export function onlyDigits(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+export function formatCep(value: string) {
+  const digits = onlyDigits(value).slice(0, 8)
+  if (digits.length <= 5) return digits
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
+
+export function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+export function formatCnpj(value: string) {
+  const digits = onlyDigits(value).slice(0, 14)
+  if (!digits) return ''
+  if (digits.length <= 2) return digits
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  if (digits.length <= 8)
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`
+  if (digits.length <= 12)
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
+      5,
+      8
+    )}/${digits.slice(8)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
+    5,
+    8
+  )}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`
+}
+
+export function isValidCnpj(value: string) {
+  const numeros = onlyDigits(value)
+  if (numeros.length !== 14) return false
+  if (/^(\d)\1+$/.test(numeros)) return false
+
+  const calc = (base: number[]) => {
+    let soma = 0
+    for (let i = 0; i < base.length; i++) {
+      soma += parseInt(numeros[i], 10) * base[i]
+    }
+    const resto = soma % 11
+    return resto < 2 ? 0 : 11 - resto
+  }
+
+  const dig1 = calc([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
+  const dig2 = calc([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
+
+  return numeros.endsWith(`${dig1}${dig2}`)
+}
+
+export const NATUREZAS_JURIDICAS = [
+  'Associação Privada',
+  'Autarquia',
+  'Empresa de Pequeno Porte (EPP)',
+  'Empresa Individual (EI)',
+  'Empresa Individual de Responsabilidade Limitada (EIRELI)',
+  'Empresa Pública (EP)',
+  'Fundação',
+  'Fundação Privada (FP)',
+  'Microempreendedor Individual (MEI)',
+  'Microempresa (ME)',
+  'Sociedade Anônima (SA)',
+  'Sociedade Cooperativa (COOP)',
+  'Sociedade de Economia Mista (SEM)',
+  'Sociedade em Comandita por Ações (SCA)',
+  'Sociedade em Comandita Simples (SCS)',
+  'Sociedade em Conta de Participação (SCP)',
+  'Sociedade em Nome Coletivo (SNC)',
+  'Sociedade Empresária (SE)',
+  'Sociedade Pura (SP)',
+  'Sociedades Cooperativas de Pequeno Porte (SCPP)',
+  'Outro',
+]
+
+export const UFS = [
+  'AC',
+  'AL',
+  'AP',
+  'AM',
+  'BA',
+  'CE',
+  'DF',
+  'ES',
+  'GO',
+  'MA',
+  'MT',
+  'MS',
+  'MG',
+  'PA',
+  'PB',
+  'PR',
+  'PE',
+  'PI',
+  'RJ',
+  'RN',
+  'RS',
+  'RO',
+  'RR',
+  'SC',
+  'SP',
+  'SE',
+  'TO',
+]
