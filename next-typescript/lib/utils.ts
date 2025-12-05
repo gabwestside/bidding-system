@@ -265,6 +265,8 @@ export function isValidCnpj(value: string) {
   return numeros.endsWith(`${dig1}${dig2}`)
 }
 
+export const toDigits = (value: string) => value.replace(/\D/g, '')
+
 export const NATUREZAS_JURIDICAS = [
   'Associação Privada',
   'Autarquia',
