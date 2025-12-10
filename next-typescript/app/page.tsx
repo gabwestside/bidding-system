@@ -95,6 +95,14 @@ export default function HomePage() {
               <Link href='/processos'>Ver processos abertos</Link>
             </Button>
 
+            <Button
+              asChild
+              variant='outline'
+              className='border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70'
+            >
+              <Link href='/form-teclado'>Formulário de Navegação</Link>
+            </Button>
+
             <p className='text-[11px] md:text-xs text-slate-500'>
               Sem custo de cadastro. Acesso imediato à área do fornecedor.
             </p>
@@ -135,7 +143,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      
+
       <section className='space-y-4'>
         <div className='flex items-center justify-between gap-2'>
           <h2 className='text-sm md:text-base font-semibold text-slate-900'>
@@ -181,7 +189,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-      
+
       <section className='space-y-4'>
         <div className='flex items-center justify-between gap-2'>
           <h2 className='text-sm md:text-base font-semibold text-slate-900'>
@@ -239,7 +247,7 @@ export default function HomePage() {
               </Button>
             </div>
           </article>
-          
+
           <article className='rounded-2xl border border-border-soft bg-white shadow-sm flex flex-col'>
             <div className='px-4 pt-4 pb-2 border-b border-slate-100'>
               <p className='text-[11px] font-semibold tracking-wide text-sky-600'>
@@ -274,7 +282,7 @@ export default function HomePage() {
               </Button>
             </div>
           </article>
-          
+
           <article className='rounded-2xl border border-border-soft bg-white shadow-sm flex flex-col'>
             <div className='px-4 pt-4 pb-2 border-b border-slate-100'>
               <p className='text-[11px] font-semibold tracking-wide text-amber-600'>
@@ -314,7 +322,7 @@ export default function HomePage() {
           </article>
         </div>
       </section>
-      
+
       <section className='space-y-6'>
         <div className='rounded-2xl bg-slate-900 text-slate-50 px-6 py-6 md:px-8 md:py-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-center'>
           <div className='space-y-4'>
@@ -380,7 +388,7 @@ export default function HomePage() {
             </p>
           </div>
         </div>
-        
+
         <div className='grid gap-4 md:grid-cols-2'>
           <div className='rounded-2xl border border-border-soft bg-white px-4 py-4 shadow-sm'>
             <p className='text-[11px] font-semibold text-slate-500 mb-1'>
