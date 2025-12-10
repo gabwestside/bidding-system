@@ -1,30 +1,25 @@
 'use client'
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  KeyboardEvent,
-  ChangeEvent,
-} from 'react'
-import { obterMunicipiosPorUf } from '@/lib/service'
+import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
 
-type FieldElement = HTMLInputElement | HTMLSelectElement
-
+const TOTAL_FIELDS = 21
 const PAGE_SIZE = 8
 
 export default function FormTecladoPage() {
+  // Valores
   const [nome, setNome] = useState('')
   const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
 
   const [logradouro, setLogradouro] = useState('')
-  const [tipoEndereco, setTipoEndereco] = useState('')
+  const [tipoEndereco, setTipoEndereco] = useState<
+    'Comercial' | 'Empresarial' | ''
+  >('')
   const [numero, setNumero] = useState('')
   const [bairro, setBairro] = useState('')
-  const [uf, setUf] = useState('')
   const [cidade, setCidade] = useState('')
+  const [uf, setUf] = useState('')
   const [cep, setCep] = useState('')
   const [complemento, setComplemento] = useState('')
 
@@ -40,109 +35,83 @@ export default function FormTecladoPage() {
   const [obs2, setObs2] = useState('')
   const [obs3, setObs3] = useState('')
 
+  // Erros obrigatórios
   const [nomeError, setNomeError] = useState<string | null>(null)
   const [cpfError, setCpfError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [empresaError, setEmpresaError] = useState<string | null>(null)
+
   const [globalError, setGlobalError] = useState<string | null>(null)
 
-  const ufs = [
-    'AC',
-    'AL',
-    'AP',
-    'AM',
-    'BA',
-    'CE',
-    'DF',
-    'ES',
-    'GO',
-    'MA',
-    'MT',
-    'MS',
-    'MG',
-    'PA',
-    'PB',
-    'PR',
-    'PE',
-    'PI',
-    'RJ',
-    'RN',
-    'RS',
-    'RO',
-    'RR',
-    'SC',
-    'SP',
-    'SE',
-    'TO',
+  // Refs (0..20)
+  const nomeRef = useRef<HTMLInputElement | null>(null) // 0
+  const cpfRef = useRef<HTMLInputElement | null>(null) // 1
+  const emailRef = useRef<HTMLInputElement | null>(null) // 2
+  const telefoneRef = useRef<HTMLInputElement | null>(null) // 3
+
+  const logradouroRef = useRef<HTMLInputElement | null>(null) // 4
+
+  // rádio (grupo índice 5)
+  const tipoEndComRef = useRef<HTMLInputElement | null>(null) // 5 - Comercial
+  const tipoEndEmpRef = useRef<HTMLInputElement | null>(null) // 5 - Empresarial
+
+  const numeroRef = useRef<HTMLInputElement | null>(null) // 6
+  const bairroRef = useRef<HTMLInputElement | null>(null) // 7
+  const cidadeRef = useRef<HTMLInputElement | null>(null) // 8
+  const ufRef = useRef<HTMLInputElement | null>(null) // 9
+  const cepRef = useRef<HTMLInputElement | null>(null) // 10
+  const complementoRef = useRef<HTMLInputElement | null>(null) // 11
+
+  const empresaRef = useRef<HTMLInputElement | null>(null) // 12
+  const cargoRef = useRef<HTMLInputElement | null>(null) // 13
+  const departamentoRef = useRef<HTMLInputElement | null>(null) // 14
+
+  const celularRef = useRef<HTMLInputElement | null>(null) // 15
+  const whatsapp2Ref = useRef<HTMLInputElement | null>(null) // 16
+  const email2Ref = useRef<HTMLInputElement | null>(null) // 17
+
+  const obs1Ref = useRef<HTMLInputElement | null>(null) // 18
+  const obs2Ref = useRef<HTMLInputElement | null>(null) // 19
+  const obs3Ref = useRef<HTMLInputElement | null>(null) // 20
+
+  const fieldRefs: React.RefObject<HTMLInputElement | null>[] = [
+    nomeRef,
+    cpfRef,
+    emailRef,
+    telefoneRef,
+    logradouroRef,
+    tipoEndComRef,
+    numeroRef,
+    bairroRef,
+    cidadeRef,
+    ufRef,
+    cepRef,
+    complementoRef,
+    empresaRef,
+    cargoRef,
+    departamentoRef,
+    celularRef,
+    whatsapp2Ref,
+    email2Ref,
+    obs1Ref,
+    obs2Ref,
+    obs3Ref,
   ]
 
-  const municipios = uf ? obterMunicipiosPorUf(uf) : []
-
-  const nomeRef = useRef<HTMLInputElement>(null) // 0
-  const cpfRef = useRef<HTMLInputElement>(null) // 1
-  const emailRef = useRef<HTMLInputElement>(null) // 2
-  const telefoneRef = useRef<HTMLInputElement>(null) // 3
-
-  const logradouroRef = useRef<HTMLInputElement>(null) // 4
-  const tipoEnderecoRef = useRef<HTMLInputElement>(null) // 5 (primeiro radio)
-  const numeroRef = useRef<HTMLInputElement>(null) // 6
-  const bairroRef = useRef<HTMLInputElement>(null) // 7
-  const ufRef = useRef<HTMLSelectElement>(null) // 8
-  const cidadeRef = useRef<HTMLSelectElement>(null) // 9
-  const cepRef = useRef<HTMLInputElement>(null) // 10
-  const complementoRef = useRef<HTMLInputElement>(null) // 11
-
-  const empresaRef = useRef<HTMLInputElement>(null) // 12
-  const cargoRef = useRef<HTMLInputElement>(null) // 13
-  const departamentoRef = useRef<HTMLInputElement>(null) // 14
-
-  const celularRef = useRef<HTMLInputElement>(null) // 15
-  const whatsapp2Ref = useRef<HTMLInputElement>(null) // 16
-  const email2Ref = useRef<HTMLInputElement>(null) // 17
-
-  const obs1Ref = useRef<HTMLInputElement>(null) // 18
-  const obs2Ref = useRef<HTMLInputElement>(null) // 19
-  const obs3Ref = useRef<HTMLInputElement>(null) // 20
-
-  const fieldRefs: React.RefObject<FieldElement | null>[] = [
-    nomeRef as React.RefObject<FieldElement | null>,
-    cpfRef as React.RefObject<FieldElement | null>,
-    emailRef as React.RefObject<FieldElement | null>,
-    telefoneRef as React.RefObject<FieldElement | null>,
-    logradouroRef as React.RefObject<FieldElement | null>,
-    tipoEnderecoRef as React.RefObject<FieldElement | null>,
-    numeroRef as React.RefObject<FieldElement | null>,
-    bairroRef as React.RefObject<FieldElement | null>,
-    ufRef as React.RefObject<FieldElement | null>,
-    cidadeRef as React.RefObject<FieldElement | null>,
-    cepRef as React.RefObject<FieldElement | null>,
-    complementoRef as React.RefObject<FieldElement | null>,
-    empresaRef as React.RefObject<FieldElement | null>,
-    cargoRef as React.RefObject<FieldElement | null>,
-    departamentoRef as React.RefObject<FieldElement | null>,
-    celularRef as React.RefObject<FieldElement | null>,
-    whatsapp2Ref as React.RefObject<FieldElement | null>,
-    email2Ref as React.RefObject<FieldElement | null>,
-    obs1Ref as React.RefObject<FieldElement | null>,
-    obs2Ref as React.RefObject<FieldElement | null>,
-    obs3Ref as React.RefObject<FieldElement | null>,
-  ]
+  // qual rádio está focado no grupo (0 = Comercial, 1 = Empresarial)
+  const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState<0 | 1>(0)
 
   // foco inicial
   useEffect(() => {
     fieldRefs[0]?.current?.focus()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ----------------- helpers de navegação / validação -----------------
-
-  const focusAt = (index: number) => {
-    if (index < 0 || index >= fieldRefs.length) return
-    const el = fieldRefs[index].current
-    if (el) el.focus()
+  const focusField = (index: number) => {
+    if (index < 0 || index >= TOTAL_FIELDS) return
+    fieldRefs[index]?.current?.focus()
   }
 
-  const getFirstInvalidRequiredIndex = (): number | null => {
+  const getFirstInvalidRequiredFieldIndex = (): number | null => {
     if (!nome.trim()) return 0
     if (!cpf.trim()) return 1
     if (!email.trim()) return 2
@@ -151,12 +120,12 @@ export default function FormTecladoPage() {
   }
 
   const handleFieldFocus = (index: number) => {
-    const firstInvalid = getFirstInvalidRequiredIndex()
-    if (firstInvalid !== null && firstInvalid < index) {
+    const firstInvalid = getFirstInvalidRequiredFieldIndex()
+    if (firstInvalid != null && firstInvalid < index) {
       setGlobalError(
         'Preencha os campos obrigatórios na ordem antes de avançar.'
       )
-      focusAt(firstInvalid)
+      focusField(firstInvalid)
     } else {
       setGlobalError(null)
     }
@@ -203,46 +172,71 @@ export default function FormTecladoPage() {
     return true
   }
 
-  const handleKeyDown = (index: number, e: KeyboardEvent) => {
-    // Ctrl + Home => primeiro
+  const handleKeyDown = (index: number) => (e: KeyboardEvent<HTMLElement>) => {
+    // --- comportamento especial para o rádio (campo 5) ---
+    if (index === 5) {
+      // setas horizontais só mudam FOCO entre Comercial / Empresarial
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        const nextFocus = tipoEnderecoFocusIndex === 0 ? 1 : 0
+        setTipoEnderecoFocusIndex(nextFocus)
+
+        const targetRef = nextFocus === 0 ? tipoEndComRef : tipoEndEmpRef
+        targetRef.current?.focus()
+        return
+      }
+
+      // espaço seleciona o valor atualmente focado
+      if (e.key === ' ') {
+        e.preventDefault()
+        setTipoEndereco(
+          tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial'
+        )
+        return
+      }
+      // Enter NÃO seleciona; será tratado abaixo apenas como “próximo campo”
+    }
+
+    // Ctrl + Home => primeiro campo
     if (e.key === 'Home' && e.ctrlKey) {
       e.preventDefault()
       setGlobalError(null)
-      focusAt(0)
+      focusField(0)
       return
     }
 
-    // Ctrl + End => último
+    // Ctrl + End => último campo
     if (e.key === 'End' && e.ctrlKey) {
       e.preventDefault()
       setGlobalError(null)
-      focusAt(fieldRefs.length - 1)
+      focusField(TOTAL_FIELDS - 1)
       return
     }
 
-    // PageDown => pula "bloco" para frente (respeitando obrigatórios)
+    // PageDown => pula "bloco" pra frente (respeitando obrigatórios)
     if (e.key === 'PageDown') {
       e.preventDefault()
-      const target = Math.min(fieldRefs.length - 1, index + PAGE_SIZE)
-      const firstInvalid = getFirstInvalidRequiredIndex()
-      if (firstInvalid !== null && firstInvalid < target) {
+      const target = Math.min(TOTAL_FIELDS - 1, index + PAGE_SIZE)
+      const firstInvalid = getFirstInvalidRequiredFieldIndex()
+
+      if (firstInvalid != null && firstInvalid < target) {
         setGlobalError(
           'Preencha os campos obrigatórios na ordem antes de avançar.'
         )
-        focusAt(firstInvalid)
+        focusField(firstInvalid)
       } else {
         setGlobalError(null)
-        focusAt(target)
+        focusField(target)
       }
       return
     }
 
-    // PageUp => pula "bloco" para trás
+    // PageUp => bloco pra trás
     if (e.key === 'PageUp') {
       e.preventDefault()
       const target = Math.max(0, index - PAGE_SIZE)
       setGlobalError(null)
-      focusAt(target)
+      focusField(target)
       return
     }
 
@@ -251,99 +245,18 @@ export default function FormTecladoPage() {
       case 'Enter': {
         e.preventDefault()
         if (!canLeaveField(index)) return
-        const next = Math.min(fieldRefs.length - 1, index + 1)
-        focusAt(next)
+        const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
+        focusField(nextIndex)
         break
       }
       case 'ArrowUp': {
         e.preventDefault()
-        const prev = Math.max(0, index - 1)
-        focusAt(prev)
+        const prevIndex = Math.max(0, index - 1)
+        focusField(prevIndex)
         break
       }
     }
   }
-
-  const handleChange = (
-    index: number,
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const value = e.target.value
-    setGlobalError(null)
-
-    switch (index) {
-      case 0:
-        setNome(value)
-        setNomeError(value.trim() ? null : 'Campo obrigatório.')
-        break
-      case 1:
-        setCpf(value)
-        setCpfError(value.trim() ? null : 'Campo obrigatório.')
-        break
-      case 2:
-        setEmail(value)
-        setEmailError(value.trim() ? null : 'Campo obrigatório.')
-        break
-      case 3:
-        setTelefone(value)
-        break
-      case 4:
-        setLogradouro(value)
-        break
-      case 5:
-        setTipoEndereco(value) // Comercial / Empresarial
-        break
-      case 6:
-        setNumero(value)
-        break
-      case 7:
-        setBairro(value)
-        break
-      case 8:
-        setUf(value)
-        setCidade('')
-        break
-      case 9:
-        setCidade(value)
-        break
-      case 10:
-        setCep(value)
-        break
-      case 11:
-        setComplemento(value)
-        break
-      case 12:
-        setEmpresa(value)
-        setEmpresaError(value.trim() ? null : 'Campo obrigatório.')
-        break
-      case 13:
-        setCargo(value)
-        break
-      case 14:
-        setDepartamento(value)
-        break
-      case 15:
-        setCelular(value)
-        break
-      case 16:
-        setWhatsappComercial(value)
-        break
-      case 17:
-        setEmailAlternativo(value)
-        break
-      case 18:
-        setObs1(value)
-        break
-      case 19:
-        setObs2(value)
-        break
-      case 20:
-        setObs3(value)
-        break
-    }
-  }
-
-  // ----------------- JSX -----------------
 
   return (
     <div className='min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8'>
@@ -385,14 +298,18 @@ export default function FormTecladoPage() {
               <input
                 id='campo-nome'
                 ref={nomeRef}
-                value={nome}
-                onChange={(e) => handleChange(0, e)}
-                onFocus={() => handleFieldFocus(0)}
-                onKeyDown={(e) => handleKeyDown(0, e)}
-                placeholder='Informe o nome'
-                className={`h-9 w-full rounded-md border ${
+                className={`h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
                   nomeError ? 'border-red-400' : 'border-border-soft'
-                } px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary`}
+                }`}
+                placeholder='Informe o nome'
+                value={nome}
+                onChange={(e) => {
+                  setNome(e.target.value)
+                  setNomeError(null)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(0)}
+                onKeyDown={handleKeyDown(0)}
               />
               {nomeError && (
                 <p className='text-[10px] text-red-500 mt-0.5'>{nomeError}</p>
@@ -407,14 +324,18 @@ export default function FormTecladoPage() {
               <input
                 id='campo-cpf'
                 ref={cpfRef}
-                value={cpf}
-                onChange={(e) => handleChange(1, e)}
-                onFocus={() => handleFieldFocus(1)}
-                onKeyDown={(e) => handleKeyDown(1, e)}
-                placeholder='999.999.999-99'
-                className={`h-9 w-full rounded-md border ${
+                className={`h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
                   cpfError ? 'border-red-400' : 'border-border-soft'
-                } px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary`}
+                }`}
+                placeholder='999.999.999-99'
+                value={cpf}
+                onChange={(e) => {
+                  setCpf(e.target.value)
+                  setCpfError(null)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(1)}
+                onKeyDown={handleKeyDown(1)}
               />
               {cpfError && (
                 <p className='text-[10px] text-red-500 mt-0.5'>{cpfError}</p>
@@ -429,14 +350,18 @@ export default function FormTecladoPage() {
               <input
                 id='campo-email'
                 ref={emailRef}
-                value={email}
-                onChange={(e) => handleChange(2, e)}
-                onFocus={() => handleFieldFocus(2)}
-                onKeyDown={(e) => handleKeyDown(2, e)}
-                placeholder='email@dominio.com'
-                className={`h-9 w-full rounded-md border ${
+                className={`h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
                   emailError ? 'border-red-400' : 'border-border-soft'
-                } px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary`}
+                }`}
+                placeholder='email@dominio.com'
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setEmailError(null)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(2)}
+                onKeyDown={handleKeyDown(2)}
               />
               {emailError && (
                 <p className='text-[10px] text-red-500 mt-0.5'>{emailError}</p>
@@ -454,12 +379,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-telefone'
                 ref={telefoneRef}
-                value={telefone}
-                onChange={(e) => handleChange(3, e)}
-                onFocus={() => handleFieldFocus(3)}
-                onKeyDown={(e) => handleKeyDown(3, e)}
-                placeholder='(00) 00000-0000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='(00) 00000-0000'
+                value={telefone}
+                onChange={(e) => {
+                  setTelefone(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(3)}
+                onKeyDown={handleKeyDown(3)}
               />
             </div>
 
@@ -479,29 +407,38 @@ export default function FormTecladoPage() {
               <input
                 id='campo-logradouro'
                 ref={logradouroRef}
-                value={logradouro}
-                onChange={(e) => handleChange(4, e)}
-                onFocus={() => handleFieldFocus(4)}
-                onKeyDown={(e) => handleKeyDown(4, e)}
-                placeholder='Rua, avenida...'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Rua, avenida...'
+                value={logradouro}
+                onChange={(e) => {
+                  setLogradouro(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(4)}
+                onKeyDown={handleKeyDown(4)}
               />
             </div>
 
-            {/* 5 - Tipo de Endereço (radio) */}
+            {/* 5 - Tipo de endereço (RÁDIO) */}
             <div className='space-y-1'>
               <span className='text-xs text-slate-700'>Tipo de endereço</span>
-              <div className='flex items-center gap-4 pt-2'>
+              <div className='flex items-center gap-4'>
                 <label className='inline-flex items-center text-xs text-slate-700'>
                   <input
                     type='radio'
-                    name='tipoEndereco'
+                    name='tipo-endereco'
                     value='Comercial'
-                    ref={tipoEnderecoRef}
+                    ref={tipoEndComRef}
                     checked={tipoEndereco === 'Comercial'}
-                    onChange={(e) => handleChange(5, e)}
-                    onFocus={() => handleFieldFocus(5)}
-                    onKeyDown={(e) => handleKeyDown(5, e)}
+                    onChange={() => {
+                      // seleção via clique/mouse
+                      setTipoEndereco('Comercial')
+                    }}
+                    onFocus={() => {
+                      setTipoEnderecoFocusIndex(0)
+                      handleFieldFocus(5)
+                    }}
+                    onKeyDown={handleKeyDown(5)}
                     className='h-3.5 w-3.5 border-border-soft text-primary'
                   />
                   <span className='ml-1'>Comercial</span>
@@ -510,12 +447,18 @@ export default function FormTecladoPage() {
                 <label className='inline-flex items-center text-xs text-slate-700'>
                   <input
                     type='radio'
-                    name='tipoEndereco'
+                    name='tipo-endereco'
                     value='Empresarial'
+                    ref={tipoEndEmpRef}
                     checked={tipoEndereco === 'Empresarial'}
-                    onChange={(e) => handleChange(5, e)}
-                    onFocus={() => handleFieldFocus(5)}
-                    onKeyDown={(e) => handleKeyDown(5, e)}
+                    onChange={() => {
+                      setTipoEndereco('Empresarial')
+                    }}
+                    onFocus={() => {
+                      setTipoEnderecoFocusIndex(1)
+                      handleFieldFocus(5)
+                    }}
+                    onKeyDown={handleKeyDown(5)}
                     className='h-3.5 w-3.5 border-border-soft text-primary'
                   />
                   <span className='ml-1'>Empresarial</span>
@@ -531,12 +474,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-numero'
                 ref={numeroRef}
-                value={numero}
-                onChange={(e) => handleChange(6, e)}
-                onFocus={() => handleFieldFocus(6)}
-                onKeyDown={(e) => handleKeyDown(6, e)}
-                placeholder='Número'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Número'
+                value={numero}
+                onChange={(e) => {
+                  setNumero(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(6)}
+                onKeyDown={handleKeyDown(6)}
               />
             </div>
 
@@ -548,60 +494,56 @@ export default function FormTecladoPage() {
               <input
                 id='campo-bairro'
                 ref={bairroRef}
-                value={bairro}
-                onChange={(e) => handleChange(7, e)}
-                onFocus={() => handleFieldFocus(7)}
-                onKeyDown={(e) => handleKeyDown(7, e)}
-                placeholder='Bairro'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Bairro'
+                value={bairro}
+                onChange={(e) => {
+                  setBairro(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(7)}
+                onKeyDown={handleKeyDown(7)}
               />
             </div>
 
-            {/* 8 - UF */}
-            <div className='space-y-1'>
-              <label className='text-xs text-slate-700' htmlFor='campo-uf'>
-                UF
-              </label>
-              <select
-                id='campo-uf'
-                ref={ufRef}
-                value={uf}
-                onChange={(e) => handleChange(8, e)}
-                onFocus={() => handleFieldFocus(8)}
-                onKeyDown={(e) => handleKeyDown(8, e)}
-                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
-              >
-                <option value=''>UF</option>
-                {ufs.map((sigla) => (
-                  <option key={sigla} value={sigla}>
-                    {sigla}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 9 - Cidade (dependente de UF) */}
+            {/* 8 - Cidade */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-cidade'>
                 Cidade
               </label>
-              <select
+              <input
                 id='campo-cidade'
                 ref={cidadeRef}
+                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Cidade'
                 value={cidade}
-                onChange={(e) => handleChange(9, e)}
+                onChange={(e) => {
+                  setCidade(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(8)}
+                onKeyDown={handleKeyDown(8)}
+              />
+            </div>
+
+            {/* 9 - UF */}
+            <div className='space-y-1'>
+              <label className='text-xs text-slate-700' htmlFor='campo-uf'>
+                UF
+              </label>
+              <input
+                id='campo-uf'
+                ref={ufRef}
+                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='UF'
+                value={uf}
+                onChange={(e) => {
+                  setUf(e.target.value)
+                  setGlobalError(null)
+                }}
                 onFocus={() => handleFieldFocus(9)}
-                onKeyDown={(e) => handleKeyDown(9, e)}
-                disabled={!uf}
-                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-50'
-              >
-                <option value=''>Selecione a cidade</option>
-                {municipios.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+                onKeyDown={handleKeyDown(9)}
+              />
             </div>
 
             {/* 10 - CEP */}
@@ -612,12 +554,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-cep'
                 ref={cepRef}
-                value={cep}
-                onChange={(e) => handleChange(10, e)}
-                onFocus={() => handleFieldFocus(10)}
-                onKeyDown={(e) => handleKeyDown(10, e)}
-                placeholder='00000-000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='00000-000'
+                value={cep}
+                onChange={(e) => {
+                  setCep(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(10)}
+                onKeyDown={handleKeyDown(10)}
               />
             </div>
 
@@ -632,12 +577,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-complemento'
                 ref={complementoRef}
-                value={complemento}
-                onChange={(e) => handleChange(11, e)}
-                onFocus={() => handleFieldFocus(11)}
-                onKeyDown={(e) => handleKeyDown(11, e)}
-                placeholder='Apartamento, bloco...'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Apartamento, bloco...'
+                value={complemento}
+                onChange={(e) => {
+                  setComplemento(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(11)}
+                onKeyDown={handleKeyDown(11)}
               />
             </div>
 
@@ -654,14 +602,18 @@ export default function FormTecladoPage() {
               <input
                 id='campo-empresa'
                 ref={empresaRef}
-                value={empresa}
-                onChange={(e) => handleChange(12, e)}
-                onFocus={() => handleFieldFocus(12)}
-                onKeyDown={(e) => handleKeyDown(12, e)}
-                placeholder='Nome da empresa'
-                className={`h-9 w-full rounded-md border ${
+                className={`h-9 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
                   empresaError ? 'border-red-400' : 'border-border-soft'
-                } px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary`}
+                }`}
+                placeholder='Nome da empresa'
+                value={empresa}
+                onChange={(e) => {
+                  setEmpresa(e.target.value)
+                  setEmpresaError(null)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(12)}
+                onKeyDown={handleKeyDown(12)}
               />
               {empresaError && (
                 <p className='text-[10px] text-red-500 mt-0.5'>
@@ -678,12 +630,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-cargo'
                 ref={cargoRef}
-                value={cargo}
-                onChange={(e) => handleChange(13, e)}
-                onFocus={() => handleFieldFocus(13)}
-                onKeyDown={(e) => handleKeyDown(13, e)}
-                placeholder='Cargo'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Cargo'
+                value={cargo}
+                onChange={(e) => {
+                  setCargo(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(13)}
+                onKeyDown={handleKeyDown(13)}
               />
             </div>
 
@@ -698,12 +653,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-departamento'
                 ref={departamentoRef}
-                value={departamento}
-                onChange={(e) => handleChange(14, e)}
-                onFocus={() => handleFieldFocus(14)}
-                onKeyDown={(e) => handleKeyDown(14, e)}
-                placeholder='Departamento'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Departamento'
+                value={departamento}
+                onChange={(e) => {
+                  setDepartamento(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(14)}
+                onKeyDown={handleKeyDown(14)}
               />
             </div>
 
@@ -720,12 +678,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-celular'
                 ref={celularRef}
-                value={celular}
-                onChange={(e) => handleChange(15, e)}
-                onFocus={() => handleFieldFocus(15)}
-                onKeyDown={(e) => handleKeyDown(15, e)}
-                placeholder='(00) 00000-0000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='(00) 00000-0000'
+                value={celular}
+                onChange={(e) => {
+                  setCelular(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(15)}
+                onKeyDown={handleKeyDown(15)}
               />
             </div>
 
@@ -740,16 +701,19 @@ export default function FormTecladoPage() {
               <input
                 id='campo-whatsapp2'
                 ref={whatsapp2Ref}
-                value={whatsappComercial}
-                onChange={(e) => handleChange(16, e)}
-                onFocus={() => handleFieldFocus(16)}
-                onKeyDown={(e) => handleKeyDown(16, e)}
-                placeholder='(00) 00000-0000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='(00) 00000-0000'
+                value={whatsappComercial}
+                onChange={(e) => {
+                  setWhatsappComercial(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(16)}
+                onKeyDown={handleKeyDown(16)}
               />
             </div>
 
-            {/* 17 - E-mail alternativo */}
+            {/* 17 - Email alternativo */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-email2'>
                 E-mail alternativo
@@ -757,12 +721,15 @@ export default function FormTecladoPage() {
               <input
                 id='campo-email2'
                 ref={email2Ref}
-                value={emailAlternativo}
-                onChange={(e) => handleChange(17, e)}
-                onFocus={() => handleFieldFocus(17)}
-                onKeyDown={(e) => handleKeyDown(17, e)}
-                placeholder='email@alternativo.com'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='email@alternativo.com'
+                value={emailAlternativo}
+                onChange={(e) => {
+                  setEmailAlternativo(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(17)}
+                onKeyDown={handleKeyDown(17)}
               />
             </div>
 
@@ -771,7 +738,7 @@ export default function FormTecladoPage() {
               Observações
             </div>
 
-            {/* 18 - Obs 1 */}
+            {/* 18 - Obs1 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs1'>
                 Observação 1
@@ -779,16 +746,19 @@ export default function FormTecladoPage() {
               <input
                 id='campo-obs1'
                 ref={obs1Ref}
-                value={obs1}
-                onChange={(e) => handleChange(18, e)}
-                onFocus={() => handleFieldFocus(18)}
-                onKeyDown={(e) => handleKeyDown(18, e)}
-                placeholder='Observação 1'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Observação 1'
+                value={obs1}
+                onChange={(e) => {
+                  setObs1(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(18)}
+                onKeyDown={handleKeyDown(18)}
               />
             </div>
 
-            {/* 19 - Obs 2 */}
+            {/* 19 - Obs2 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs2'>
                 Observação 2
@@ -796,16 +766,19 @@ export default function FormTecladoPage() {
               <input
                 id='campo-obs2'
                 ref={obs2Ref}
-                value={obs2}
-                onChange={(e) => handleChange(19, e)}
-                onFocus={() => handleFieldFocus(19)}
-                onKeyDown={(e) => handleKeyDown(19, e)}
-                placeholder='Observação 2'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Observação 2'
+                value={obs2}
+                onChange={(e) => {
+                  setObs2(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(19)}
+                onKeyDown={handleKeyDown(19)}
               />
             </div>
 
-            {/* 20 - Obs 3 */}
+            {/* 20 - Obs3 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs3'>
                 Observação 3
@@ -813,21 +786,23 @@ export default function FormTecladoPage() {
               <input
                 id='campo-obs3'
                 ref={obs3Ref}
-                value={obs3}
-                onChange={(e) => handleChange(20, e)}
-                onFocus={() => handleFieldFocus(20)}
-                onKeyDown={(e) => handleKeyDown(20, e)}
-                placeholder='Observação 3'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                placeholder='Observação 3'
+                value={obs3}
+                onChange={(e) => {
+                  setObs3(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFieldFocus(20)}
+                onKeyDown={handleKeyDown(20)}
               />
             </div>
           </div>
 
           <div className='px-4 pt-1 pb-3 border-t border-border-soft text-[11px] text-slate-500 space-y-0.5'>
             <p>
-              Navegação entre campos:
-              <span className='font-medium'> ↑ / ↓ / Enter </span> muda de
-              campo.
+              Navegação entre campos:{' '}
+              <span className='font-medium'>↑ / ↓ / Enter</span> muda de campo.
             </p>
             <p>
               <span className='font-medium'>Ctrl + Home</span> vai para o
