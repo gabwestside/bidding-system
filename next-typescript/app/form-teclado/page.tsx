@@ -39,11 +39,12 @@ const UFS = [
   'TO',
 ]
 
-const TOTAL_FIELDS = 21 // 0..20
+// agora 0..22 (23 campos)
+const TOTAL_FIELDS = 23
 const PAGE_SIZE = 8
 
 export default function FormTecladoPage() {
-  // --------- refs (0..20) ---------
+  // --------- refs (0..22) ---------
   const nomeRef = useRef<HTMLInputElement | null>(null) // 0
   const cpfRef = useRef<HTMLInputElement | null>(null) // 1
   const emailRef = useRef<HTMLInputElement | null>(null) // 2
@@ -55,26 +56,34 @@ export default function FormTecladoPage() {
   const tipoEndComRef = useRef<HTMLInputElement | null>(null)
   const tipoEndEmpRef = useRef<HTMLInputElement | null>(null)
 
+  // UF / Cidade
   const ufRef = useRef<HTMLInputElement | null>(null) // 6
   const cidadeRef = useRef<HTMLInputElement | null>(null) // 7
 
-  const bairroRef = useRef<HTMLInputElement | null>(null) // 8
-  const numeroRef = useRef<HTMLInputElement | null>(null) // 9
+  // grupo checkboxes tipo de via (index 8)
+  const tipoViaRuaRef = useRef<HTMLInputElement | null>(null)
+  const tipoViaAvenidaRef = useRef<HTMLInputElement | null>(null)
+  const tipoViaLogradouroRef = useRef<HTMLInputElement | null>(null)
 
-  const cepRef = useRef<HTMLInputElement | null>(null) // 10
-  const complementoRef = useRef<HTMLInputElement | null>(null) // 11
+  const descricaoViaRef = useRef<HTMLInputElement | null>(null) // 9
 
-  const empresaRef = useRef<HTMLInputElement | null>(null) // 12
-  const cargoRef = useRef<HTMLInputElement | null>(null) // 13
-  const departamentoRef = useRef<HTMLInputElement | null>(null) // 14
+  const bairroRef = useRef<HTMLInputElement | null>(null) // 10
+  const numeroRef = useRef<HTMLInputElement | null>(null) // 11
 
-  const celularRef = useRef<HTMLInputElement | null>(null) // 15
-  const whatsapp2Ref = useRef<HTMLInputElement | null>(null) // 16
-  const email2Ref = useRef<HTMLInputElement | null>(null) // 17
+  const cepRef = useRef<HTMLInputElement | null>(null) // 12
+  const complementoRef = useRef<HTMLInputElement | null>(null) // 13
 
-  const obs1Ref = useRef<HTMLInputElement | null>(null) // 18
-  const obs2Ref = useRef<HTMLInputElement | null>(null) // 19
-  const obs3Ref = useRef<HTMLInputElement | null>(null) // 20
+  const empresaRef = useRef<HTMLInputElement | null>(null) // 14
+  const cargoRef = useRef<HTMLInputElement | null>(null) // 15
+  const departamentoRef = useRef<HTMLInputElement | null>(null) // 16
+
+  const celularRef = useRef<HTMLInputElement | null>(null) // 17
+  const whatsapp2Ref = useRef<HTMLInputElement | null>(null) // 18
+  const email2Ref = useRef<HTMLInputElement | null>(null) // 19
+
+  const obs1Ref = useRef<HTMLInputElement | null>(null) // 20
+  const obs2Ref = useRef<HTMLInputElement | null>(null) // 21
+  const obs3Ref = useRef<HTMLInputElement | null>(null) // 22
 
   const fieldRefs: React.RefObject<HTMLElement | null>[] = [
     nomeRef, // 0
@@ -85,19 +94,21 @@ export default function FormTecladoPage() {
     tipoEndComRef, // 5 (grupo rádio)
     ufRef, // 6
     cidadeRef, // 7
-    bairroRef, // 8
-    numeroRef, // 9
-    cepRef, // 10
-    complementoRef, // 11
-    empresaRef, // 12
-    cargoRef, // 13
-    departamentoRef, // 14
-    celularRef, // 15
-    whatsapp2Ref, // 16
-    email2Ref, // 17
-    obs1Ref, // 18
-    obs2Ref, // 19
-    obs3Ref, // 20
+    tipoViaRuaRef, // 8 (grupo – entra pelo primeiro checkbox)
+    descricaoViaRef, // 9
+    bairroRef, // 10
+    numeroRef, // 11
+    cepRef, // 12
+    complementoRef, // 13
+    empresaRef, // 14
+    cargoRef, // 15
+    departamentoRef, // 16
+    celularRef, // 17
+    whatsapp2Ref, // 18
+    email2Ref, // 19
+    obs1Ref, // 20
+    obs2Ref, // 21
+    obs3Ref, // 22
   ]
 
   // container rolável do formulário
@@ -114,6 +125,13 @@ export default function FormTecladoPage() {
 
   const [uf, setUf] = useState('')
   const [cidade, setCidade] = useState('')
+
+  // tipo de via (checkboxes + descrição)
+  const [tipoViaRua, setTipoViaRua] = useState(false)
+  const [tipoViaAvenida, setTipoViaAvenida] = useState(false)
+  const [tipoViaLogradouro, setTipoViaLogradouro] = useState(false)
+  const [tipoViaFocusIndex, setTipoViaFocusIndex] = useState(0) // 0=Rua,1=Avenida,2=Logradouro
+  const [descricaoVia, setDescricaoVia] = useState('')
 
   const [bairro, setBairro] = useState('')
   const [numero, setNumero] = useState('')
@@ -141,7 +159,11 @@ export default function FormTecladoPage() {
   const [cpfError, setCpfError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [empresaError, setEmpresaError] = useState<string | null>(null)
+  const [tipoViaError, setTipoViaError] = useState<string | null>(null)
   const [globalError, setGlobalError] = useState<string | null>(null)
+
+  const hasTipoViaSelecionado =
+    tipoViaRua || tipoViaAvenida || tipoViaLogradouro
 
   // --------- dropdowns: UF e Cidade ---------
   const [ufDropdownOpen, setUfDropdownOpen] = useState(false)
@@ -207,7 +229,8 @@ export default function FormTecladoPage() {
     if (!nome.trim()) return 0
     if (!cpf.trim()) return 1
     if (!email.trim()) return 2
-    if (!empresa.trim()) return 12
+    if (!hasTipoViaSelecionado) return 8
+    if (!empresa.trim()) return 14
     return null
   }
 
@@ -236,7 +259,16 @@ export default function FormTecladoPage() {
           return false
         }
         break
-      case 12:
+      case 8:
+        if (!hasTipoViaSelecionado) {
+          setTipoViaError('Selecione pelo menos um tipo de via.')
+          setGlobalError(
+            'Selecione Rua, Avenida ou Logradouro antes de continuar.'
+          )
+          return false
+        }
+        break
+      case 14:
         if (!empresa.trim()) {
           setEmpresaError('Campo obrigatório.')
           setGlobalError('Preencha a empresa antes de continuar.')
@@ -290,6 +322,15 @@ export default function FormTecladoPage() {
     setCidadeFocusedIndex(null)
   }
 
+  const toggleTipoVia = (idx: number) => {
+    setTipoViaError(null)
+    setGlobalError(null)
+
+    if (idx === 0) setTipoViaRua((v) => !v)
+    if (idx === 1) setTipoViaAvenida((v) => !v)
+    if (idx === 2) setTipoViaLogradouro((v) => !v)
+  }
+
   // --------- tratamento de teclado ---------
   const handleKeyDown = (index: number) => (e: KeyboardEvent<HTMLElement>) => {
     const key = e.key
@@ -312,6 +353,33 @@ export default function FormTecladoPage() {
         setTipoEndereco(
           tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial'
         )
+        return
+      }
+    }
+
+    // ---------- grupo checkboxes tipo de via (index 8) ----------
+    if (index === 8) {
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        e.preventDefault()
+        const total = 3
+        const forward = key === 'ArrowRight'
+        const current = tipoViaFocusIndex
+        const next = (current + (forward ? 1 : -1) + total) % total
+        setTipoViaFocusIndex(next)
+
+        const ref =
+          next === 0
+            ? tipoViaRuaRef.current
+            : next === 1
+            ? tipoViaAvenidaRef.current
+            : tipoViaLogradouroRef.current
+        ref?.focus()
+        return
+      }
+
+      if (key === ' ' || key === 'Spacebar') {
+        e.preventDefault()
+        toggleTipoVia(tipoViaFocusIndex)
         return
       }
     }
@@ -686,7 +754,6 @@ export default function FormTecladoPage() {
                     setCidadeFocusedIndex(null)
                     setGlobalError(null)
 
-                    // filtra UFs para decidir se abre/fecha dropdown
                     const texto = value.trim()
                     const matches = texto
                       ? UFS.filter((sigla) =>
@@ -827,7 +894,83 @@ export default function FormTecladoPage() {
               </div>
             </div>
 
-            {/* 8 - Bairro */}
+            {/* 8 - Tipo de via (checkboxes) */}
+            <div className='space-y-1'>
+              <span className='text-xs text-slate-700'>
+                Tipo de via <span className='text-red-500'>*</span>
+              </span>
+              <div className='flex items-center gap-4'>
+                <label className='inline-flex items-center text-xs text-slate-700'>
+                  <input
+                    type='checkbox'
+                    ref={tipoViaRuaRef}
+                    checked={tipoViaRua}
+                    onChange={() => toggleTipoVia(0)}
+                    onFocus={() => handleFocus(8)}
+                    onKeyDown={handleKeyDown(8)}
+                    className='h-3.5 w-3.5 border-border-soft text-primary'
+                  />
+                  <span className='ml-1'>Rua</span>
+                </label>
+
+                <label className='inline-flex items-center text-xs text-slate-700'>
+                  <input
+                    type='checkbox'
+                    ref={tipoViaAvenidaRef}
+                    checked={tipoViaAvenida}
+                    onChange={() => toggleTipoVia(1)}
+                    onFocus={() => handleFocus(8)}
+                    onKeyDown={handleKeyDown(8)}
+                    className='h-3.5 w-3.5 border-border-soft text-primary'
+                  />
+                  <span className='ml-1'>Avenida</span>
+                </label>
+
+                <label className='inline-flex items-center text-xs text-slate-700'>
+                  <input
+                    type='checkbox'
+                    ref={tipoViaLogradouroRef}
+                    checked={tipoViaLogradouro}
+                    onChange={() => toggleTipoVia(2)}
+                    onFocus={() => handleFocus(8)}
+                    onKeyDown={handleKeyDown(8)}
+                    className='h-3.5 w-3.5 border-border-soft text-primary'
+                  />
+                  <span className='ml-1'>Logradouro</span>
+                </label>
+              </div>
+              {tipoViaError && (
+                <p className='text-[10px] text-red-500 mt-0.5'>
+                  {tipoViaError}
+                </p>
+              )}
+            </div>
+
+            {/* 9 - Descrição da via (dependente dos checkboxes) */}
+            <div className='space-y-1'>
+              <label
+                className='text-xs text-slate-700'
+                htmlFor='campo-desc-via'
+              >
+                Nome da rua/avenida/logradouro
+              </label>
+              <input
+                id='campo-desc-via'
+                ref={descricaoViaRef}
+                value={descricaoVia}
+                onChange={(e) => {
+                  setDescricaoVia(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFocus(9)}
+                onKeyDown={handleKeyDown(9)}
+                placeholder='Ex.: Rua das Flores, Av. Paulista...'
+                disabled={!hasTipoViaSelecionado}
+                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-100 disabled:text-slate-400'
+              />
+            </div>
+
+            {/* 10 - Bairro */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-bairro'>
                 Bairro
@@ -840,14 +983,14 @@ export default function FormTecladoPage() {
                   setBairro(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(8)}
-                onKeyDown={handleKeyDown(8)}
+                onFocus={() => handleFocus(10)}
+                onKeyDown={handleKeyDown(10)}
                 placeholder='Bairro'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 9 - Número */}
+            {/* 11 - Número */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-numero'>
                 Número
@@ -860,14 +1003,14 @@ export default function FormTecladoPage() {
                   setNumero(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(9)}
-                onKeyDown={handleKeyDown(9)}
+                onFocus={() => handleFocus(11)}
+                onKeyDown={handleKeyDown(11)}
                 placeholder='Número'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 10 - CEP */}
+            {/* 12 - CEP */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-cep'>
                 CEP
@@ -880,14 +1023,14 @@ export default function FormTecladoPage() {
                   setCep(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(10)}
-                onKeyDown={handleKeyDown(10)}
+                onFocus={() => handleFocus(12)}
+                onKeyDown={handleKeyDown(12)}
                 placeholder='00000-000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 11 - Complemento */}
+            {/* 13 - Complemento */}
             <div className='space-y-1'>
               <label
                 className='text-xs text-slate-700'
@@ -903,8 +1046,8 @@ export default function FormTecladoPage() {
                   setComplemento(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(11)}
-                onKeyDown={handleKeyDown(11)}
+                onFocus={() => handleFocus(13)}
+                onKeyDown={handleKeyDown(13)}
                 placeholder='Apartamento, bloco...'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
@@ -915,7 +1058,7 @@ export default function FormTecladoPage() {
               Dados profissionais
             </div>
 
-            {/* 12 - Empresa */}
+            {/* 14 - Empresa */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-empresa'>
                 Empresa <span className='text-red-500'>*</span>
@@ -929,8 +1072,8 @@ export default function FormTecladoPage() {
                   setEmpresaError(null)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(12)}
-                onKeyDown={handleKeyDown(12)}
+                onFocus={() => handleFocus(14)}
+                onKeyDown={handleKeyDown(14)}
                 placeholder='Nome da empresa'
                 className={`h-9 w-full rounded-md border ${
                   empresaError ? 'border-red-400' : 'border-border-soft'
@@ -943,7 +1086,7 @@ export default function FormTecladoPage() {
               )}
             </div>
 
-            {/* 13 - Cargo */}
+            {/* 15 - Cargo */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-cargo'>
                 Cargo
@@ -956,14 +1099,14 @@ export default function FormTecladoPage() {
                   setCargo(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(13)}
-                onKeyDown={handleKeyDown(13)}
+                onFocus={() => handleFocus(15)}
+                onKeyDown={handleKeyDown(15)}
                 placeholder='Cargo'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 14 - Departamento */}
+            {/* 16 - Departamento */}
             <div className='space-y-1'>
               <label
                 className='text-xs text-slate-700'
@@ -979,8 +1122,8 @@ export default function FormTecladoPage() {
                   setDepartamento(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(14)}
-                onKeyDown={handleKeyDown(14)}
+                onFocus={() => handleFocus(16)}
+                onKeyDown={handleKeyDown(16)}
                 placeholder='Departamento'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
@@ -991,7 +1134,7 @@ export default function FormTecladoPage() {
               Contatos adicionais
             </div>
 
-            {/* 15 - Celular */}
+            {/* 17 - Celular */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-celular'>
                 Celular
@@ -1004,14 +1147,14 @@ export default function FormTecladoPage() {
                   setCelular(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(15)}
-                onKeyDown={handleKeyDown(15)}
+                onFocus={() => handleFocus(17)}
+                onKeyDown={handleKeyDown(17)}
                 placeholder='(00) 00000-0000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 16 - WhatsApp comercial */}
+            {/* 18 - WhatsApp comercial */}
             <div className='space-y-1'>
               <label
                 className='text-xs text-slate-700'
@@ -1027,14 +1170,14 @@ export default function FormTecladoPage() {
                   setWhatsappComercial(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(16)}
-                onKeyDown={handleKeyDown(16)}
+                onFocus={() => handleFocus(18)}
+                onKeyDown={handleKeyDown(18)}
                 placeholder='(00) 00000-0000'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 17 - E-mail alternativo */}
+            {/* 19 - E-mail alternativo */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-email2'>
                 E-mail alternativo
@@ -1047,8 +1190,8 @@ export default function FormTecladoPage() {
                   setEmailAlternativo(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(17)}
-                onKeyDown={handleKeyDown(17)}
+                onFocus={() => handleFocus(19)}
+                onKeyDown={handleKeyDown(19)}
                 placeholder='email@alternativo.com'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
@@ -1059,7 +1202,7 @@ export default function FormTecladoPage() {
               Observações
             </div>
 
-            {/* 18 - Obs1 */}
+            {/* 20 - Obs1 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs1'>
                 Observação 1
@@ -1072,14 +1215,14 @@ export default function FormTecladoPage() {
                   setObs1(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(18)}
-                onKeyDown={handleKeyDown(18)}
+                onFocus={() => handleFocus(20)}
+                onKeyDown={handleKeyDown(20)}
                 placeholder='Observação 1'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 19 - Obs2 */}
+            {/* 21 - Obs2 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs2'>
                 Observação 2
@@ -1092,14 +1235,14 @@ export default function FormTecladoPage() {
                   setObs2(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(19)}
-                onKeyDown={handleKeyDown(19)}
+                onFocus={() => handleFocus(21)}
+                onKeyDown={handleKeyDown(21)}
                 placeholder='Observação 2'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 20 - Obs3 */}
+            {/* 22 - Obs3 */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-obs3'>
                 Observação 3
@@ -1112,8 +1255,8 @@ export default function FormTecladoPage() {
                   setObs3(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(20)}
-                onKeyDown={handleKeyDown(20)}
+                onFocus={() => handleFocus(22)}
+                onKeyDown={handleKeyDown(22)}
                 placeholder='Observação 3'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
@@ -1142,6 +1285,12 @@ export default function FormTecladoPage() {
               navegar, <span className='font-medium'>Espaço</span> para
               selecionar e <span className='font-medium'>Enter</span> para
               selecionar e avançar.
+            </p>
+            <p>
+              No grupo de tipo de via: use{' '}
+              <span className='font-medium'>← / →</span> para trocar entre Rua /
+              Avenida / Logradouro e <span className='font-medium'>Espaço</span>{' '}
+              para marcar/desmarcar.
             </p>
           </div>
         </div>
