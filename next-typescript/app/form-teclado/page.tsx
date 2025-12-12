@@ -55,12 +55,11 @@ export default function FormTecladoPage() {
   const tipoEndComRef = useRef<HTMLInputElement | null>(null)
   const tipoEndEmpRef = useRef<HTMLInputElement | null>(null)
 
-  const numeroRef = useRef<HTMLInputElement | null>(null) // 6
-  const bairroRef = useRef<HTMLInputElement | null>(null) // 7
+  const ufRef = useRef<HTMLInputElement | null>(null) // 6
+  const cidadeRef = useRef<HTMLInputElement | null>(null) // 7
 
-  // cidade / UF serão "combos" (div focável)
-  const cidadeRef = useRef<HTMLDivElement | null>(null) // 8
-  const ufRef = useRef<HTMLDivElement | null>(null) // 9
+  const bairroRef = useRef<HTMLInputElement | null>(null) // 8
+  const numeroRef = useRef<HTMLInputElement | null>(null) // 9
 
   const cepRef = useRef<HTMLInputElement | null>(null) // 10
   const complementoRef = useRef<HTMLInputElement | null>(null) // 11
@@ -78,28 +77,31 @@ export default function FormTecladoPage() {
   const obs3Ref = useRef<HTMLInputElement | null>(null) // 20
 
   const fieldRefs: React.RefObject<HTMLElement | null>[] = [
-    nomeRef,
-    cpfRef,
-    emailRef,
-    telefoneRef,
-    logradouroRef,
-    tipoEndComRef,
-    numeroRef,
-    bairroRef,
-    cidadeRef,
-    ufRef,
-    cepRef,
-    complementoRef,
-    empresaRef,
-    cargoRef,
-    departamentoRef,
-    celularRef,
-    whatsapp2Ref,
-    email2Ref,
-    obs1Ref,
-    obs2Ref,
-    obs3Ref,
+    nomeRef, // 0
+    cpfRef, // 1
+    emailRef, // 2
+    telefoneRef, // 3
+    logradouroRef, // 4
+    tipoEndComRef, // 5 (grupo rádio)
+    ufRef, // 6
+    cidadeRef, // 7
+    bairroRef, // 8
+    numeroRef, // 9
+    cepRef, // 10
+    complementoRef, // 11
+    empresaRef, // 12
+    cargoRef, // 13
+    departamentoRef, // 14
+    celularRef, // 15
+    whatsapp2Ref, // 16
+    email2Ref, // 17
+    obs1Ref, // 18
+    obs2Ref, // 19
+    obs3Ref, // 20
   ]
+
+  // container rolável do formulário
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
 
   // --------- valores dos campos ---------
   const [nome, setNome] = useState('')
@@ -109,11 +111,13 @@ export default function FormTecladoPage() {
 
   const [logradouro, setLogradouro] = useState('')
   const [tipoEndereco, setTipoEndereco] = useState('') // Comercial / Empresarial
-  const [numero, setNumero] = useState('')
-  const [bairro, setBairro] = useState('')
 
-  const [cidade, setCidade] = useState('')
   const [uf, setUf] = useState('')
+  const [cidade, setCidade] = useState('')
+
+  const [bairro, setBairro] = useState('')
+  const [numero, setNumero] = useState('')
+
   const [cep, setCep] = useState('')
   const [complemento, setComplemento] = useState('')
 
@@ -148,21 +152,55 @@ export default function FormTecladoPage() {
     null
   )
 
-  const cidadesDisponiveis = useMemo(
-    () => (uf ? obterMunicipiosPorUf(uf) : []),
-    [uf]
+  // texto de UF normalizado para consulta de municípios
+  const ufFiltro = useMemo(() => uf.trim().toUpperCase(), [uf])
+
+  // base de cidades para o UF atual
+  const cidadesBase = useMemo(
+    () => (ufFiltro ? obterMunicipiosPorUf(ufFiltro) : []),
+    [ufFiltro]
   )
 
-  // foca automaticamente no campo 0
-  useEffect(() => {
-    fieldRefs[0]?.current?.focus()
-  }, [])
+  // listas filtradas pela digitação
+  const ufsFiltradas = useMemo(() => {
+    const texto = uf.trim()
+    if (!texto) return UFS
+    return UFS.filter((sigla) =>
+      sigla.toLowerCase().includes(texto.toLowerCase())
+    )
+  }, [uf])
+
+  const cidadesFiltradas = useMemo(() => {
+    const texto = cidade.trim()
+    if (!texto) return cidadesBase
+    return cidadesBase.filter((c) =>
+      c.toLowerCase().includes(texto.toLowerCase())
+    )
+  }, [cidade, cidadesBase])
 
   // --------- helpers de navegação geral ---------
   const focusField = (index: number) => {
     if (index < 0 || index >= TOTAL_FIELDS) return
+
     const ref = fieldRefs[index]
-    ref?.current?.focus()
+    const element = ref?.current as HTMLElement | null
+    if (!element) return
+
+    element.focus()
+
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const padding = 16 // px
+
+    const containerRect = container.getBoundingClientRect()
+    const elRect = element.getBoundingClientRect()
+
+    if (elRect.top < containerRect.top + padding) {
+      container.scrollTop += elRect.top - (containerRect.top + padding)
+    } else if (elRect.bottom > containerRect.bottom - padding) {
+      container.scrollTop += elRect.bottom - (containerRect.bottom - padding)
+    }
   }
 
   const getFirstInvalidRequiredIndex = (): number | null => {
@@ -222,24 +260,32 @@ export default function FormTecladoPage() {
     }
   }
 
-  // --------- seleção UF / Cidade ---------
-  const selectUf = (idx: number) => {
-    if (idx < 0 || idx >= UFS.length) return
-    const value = UFS[idx]
-    setUf(value)
+  // foca automaticamente no campo 0
+  useEffect(() => {
+    focusField(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // --------- seleção UF / Cidade por valor ---------
+  const selectUfValue = (value: string) => {
+    const normalized = value.trim().toUpperCase()
+    if (!normalized) return
+
+    setUf(normalized)
     setUfDropdownOpen(false)
     setUfFocusedIndex(null)
 
-    // ao trocar UF, limpa cidade e suas seleções
+    // limpamos cidade associada
     setCidade('')
     setCidadeDropdownOpen(false)
     setCidadeFocusedIndex(null)
   }
 
-  const selectCidade = (idx: number) => {
-    if (idx < 0 || idx >= cidadesDisponiveis.length) return
-    const value = cidadesDisponiveis[idx]
-    setCidade(value)
+  const selectCidadeValue = (value: string) => {
+    const nomeCidade = value.trim()
+    if (!nomeCidade) return
+
+    setCidade(nomeCidade)
     setCidadeDropdownOpen(false)
     setCidadeFocusedIndex(null)
   }
@@ -250,8 +296,6 @@ export default function FormTecladoPage() {
 
     // ---------- rádio (index 5) ----------
     if (index === 5) {
-      // ↑ / ↓: navegação geral (não interceptamos aqui, deixamos cair no bloco geral)
-      // ← / →: alternam foco entre Comercial / Empresarial
       if (key === 'ArrowLeft' || key === 'ArrowRight') {
         e.preventDefault()
         const nextFocus = tipoEnderecoFocusIndex === 0 ? 1 : 0
@@ -263,7 +307,6 @@ export default function FormTecladoPage() {
         return
       }
 
-      // Espaço: seleciona a opção focada (sem sair do campo)
       if (key === ' ' || key === 'Spacebar') {
         e.preventDefault()
         setTipoEndereco(
@@ -271,106 +314,91 @@ export default function FormTecladoPage() {
         )
         return
       }
-      // Enter: não seleciona nada, apenas cai na navegação geral (próximo campo)
-      // portanto não damos return aqui.
     }
 
-    // ---------- dropdowns (Cidade: 8, UF: 9) ----------
-    const isDropdown = index === 8 || index === 9
+    // ---------- dropdowns (UF: 6, Cidade: 7) ----------
+    const isDropdown = index === 6 || index === 7
     if (isDropdown) {
-      const isUf = index === 9
+      const isUf = index === 6
       const open = isUf ? ufDropdownOpen : cidadeDropdownOpen
       const focusedIndex = isUf ? ufFocusedIndex : cidadeFocusedIndex
-      const options = isUf ? UFS : cidadesDisponiveis
+      const options = isUf ? ufsFiltradas : cidadesFiltradas
       const optionsCount = options.length
 
       const setOpen = isUf ? setUfDropdownOpen : setCidadeDropdownOpen
       const setFocused = isUf ? setUfFocusedIndex : setCidadeFocusedIndex
 
-      // Abrir com F4 ou Espaço quando fechado
+      // Abrir com F4 ou Espaço quando fechado (só se houver opções)
       if (!open && (key === 'F4' || key === ' ' || key === 'Spacebar')) {
         e.preventDefault()
+        if (optionsCount === 0) return
         setOpen(true)
         setFocused(null)
         return
       }
 
       if (open) {
-        // Se não há opções: só tratamos Esc, demais teclas caem na navegação geral
-        if (optionsCount === 0) {
-          if (key === 'Escape') {
-            e.preventDefault()
-            setOpen(false)
-            setFocused(null)
-            return
-          }
-          // não damos return → ArrowUp/Down/Enter vão para a lógica geral de campos
-        } else {
-          // Há opções: interceptamos navegação interna
-          if (
-            key === 'ArrowDown' ||
-            key === 'ArrowUp' ||
-            key === 'ArrowLeft' ||
-            key === 'ArrowRight'
-          ) {
-            e.preventDefault()
-            const forward = key === 'ArrowDown' || key === 'ArrowRight'
-            const current = focusedIndex ?? -1
-            const next =
-              (current + (forward ? 1 : -1) + optionsCount) % optionsCount
-            setFocused(next)
+        if (
+          key === 'ArrowDown' ||
+          key === 'ArrowUp' ||
+          key === 'ArrowLeft' ||
+          key === 'ArrowRight'
+        ) {
+          if (optionsCount === 0) {
             return
           }
 
-          // Espaço → seleciona e mantém foco no dropdown
-          if (key === ' ' || key === 'Spacebar') {
-            e.preventDefault()
-            if (focusedIndex != null) {
-              if (isUf) {
-                selectUf(focusedIndex)
-              } else {
-                selectCidade(focusedIndex)
-              }
-              // mantém foco no campo (combo)
-              const ref = isUf ? ufRef.current : cidadeRef.current
-              ref?.focus()
-            }
-            return
-          }
-
-          // Enter → seleciona e pula pro próximo
-          if (key === 'Enter') {
-            e.preventDefault()
-            if (focusedIndex != null) {
-              if (isUf) {
-                selectUf(focusedIndex)
-              } else {
-                selectCidade(focusedIndex)
-              }
-            }
-
-            if (!canLeaveField(index)) return
-            const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
-            focusField(nextIndex)
-            return
-          }
-
-          // Esc → fecha sem alterar
-          if (key === 'Escape') {
-            e.preventDefault()
-            setOpen(false)
-            setFocused(null)
-            return
-          }
-        }
-      } else {
-        // Dropdown fechado:
-        // ← / → não têm efeito especial
-        if (key === 'ArrowLeft' || key === 'ArrowRight') {
-          // não faz nada; não damos preventDefault
+          e.preventDefault()
+          const forward = key === 'ArrowDown' || key === 'ArrowRight'
+          const current = focusedIndex ?? -1
+          const next =
+            (current + (forward ? 1 : -1) + optionsCount) % optionsCount
+          setFocused(next)
           return
         }
-        // ↑ / ↓ / Enter caem na navegação de campos abaixo
+
+        if (key === ' ' || key === 'Spacebar') {
+          e.preventDefault()
+          if (focusedIndex != null && optionsCount > 0) {
+            const value = options[focusedIndex]
+            if (isUf) {
+              selectUfValue(value)
+            } else {
+              selectCidadeValue(value)
+            }
+            const ref = isUf ? ufRef.current : cidadeRef.current
+            ref?.focus()
+          }
+          return
+        }
+
+        if (key === 'Enter') {
+          e.preventDefault()
+          if (focusedIndex != null && optionsCount > 0) {
+            const value = options[focusedIndex]
+            if (isUf) {
+              selectUfValue(value)
+            } else {
+              selectCidadeValue(value)
+            }
+          }
+
+          if (!canLeaveField(index)) return
+          const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
+          focusField(nextIndex)
+          return
+        }
+
+        if (key === 'Escape') {
+          e.preventDefault()
+          setOpen(false)
+          setFocused(null)
+          return
+        }
+      } else {
+        if (key === 'ArrowLeft' || key === 'ArrowRight') {
+          return
+        }
       }
     }
 
@@ -452,7 +480,10 @@ export default function FormTecladoPage() {
             </p>
           </div>
 
-          <div className='px-4 pt-3 pb-3 space-y-3 max-h-[60vh] overflow-auto'>
+          <div
+            ref={scrollContainerRef}
+            className='px-4 pt-3 pb-3 space-y-3 max-h-[60vh] overflow-auto'
+          >
             {globalError && (
               <div className='rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700'>
                 {globalError}
@@ -635,27 +666,168 @@ export default function FormTecladoPage() {
               </div>
             </div>
 
-            {/* 6 - Número */}
+            {/* 6 - UF (input + dropdown) */}
             <div className='space-y-1'>
-              <label className='text-xs text-slate-700' htmlFor='campo-numero'>
-                Número
+              <label className='text-xs text-slate-700' htmlFor='campo-uf'>
+                UF
               </label>
-              <input
-                id='campo-numero'
-                ref={numeroRef}
-                value={numero}
-                onChange={(e) => {
-                  setNumero(e.target.value)
-                  setGlobalError(null)
-                }}
-                onFocus={() => handleFocus(6)}
-                onKeyDown={handleKeyDown(6)}
-                placeholder='Número'
-                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
-              />
+              <div className='relative'>
+                <input
+                  id='campo-uf'
+                  ref={ufRef}
+                  value={uf}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase()
+                    setUf(value)
+
+                    // ao trocar UF, zera cidade
+                    setCidade('')
+                    setCidadeDropdownOpen(false)
+                    setCidadeFocusedIndex(null)
+                    setGlobalError(null)
+
+                    // filtra UFs para decidir se abre/fecha dropdown
+                    const texto = value.trim()
+                    const matches = texto
+                      ? UFS.filter((sigla) =>
+                          sigla.toLowerCase().includes(texto.toLowerCase())
+                        )
+                      : UFS
+
+                    if (matches.length > 0) {
+                      setUfDropdownOpen(true)
+                      setUfFocusedIndex(0)
+                    } else {
+                      setUfDropdownOpen(false)
+                      setUfFocusedIndex(null)
+                    }
+                  }}
+                  onFocus={() => handleFocus(6)}
+                  onKeyDown={handleKeyDown(6)}
+                  placeholder='UF'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                />
+                <button
+                  type='button'
+                  className='absolute inset-y-0 right-1 px-1 text-[10px] text-slate-400'
+                  onClick={() => {
+                    const options = ufsFiltradas
+                    if (!options.length) return
+                    setUfDropdownOpen((open) => !open)
+                    setUfFocusedIndex(null)
+                  }}
+                >
+                  ▼
+                </button>
+
+                {ufDropdownOpen && ufsFiltradas.length > 0 && (
+                  <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs'>
+                    {ufsFiltradas.map((sigla, idx) => {
+                      const focused = ufFocusedIndex === idx
+                      const selected = uf === sigla
+                      return (
+                        <div
+                          key={sigla}
+                          onMouseDown={(ev) => {
+                            ev.preventDefault()
+                            selectUfValue(sigla)
+                            ufRef.current?.focus()
+                          }}
+                          className={`px-2 py-1 cursor-pointer ${
+                            focused
+                              ? 'bg-primary text-white'
+                              : selected
+                              ? 'bg-slate-100 text-slate-900'
+                              : 'hover:bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {sigla}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* 7 - Bairro */}
+            {/* 7 - Cidade (input + dropdown) */}
+            <div className='space-y-1'>
+              <label className='text-xs text-slate-700' htmlFor='campo-cidade'>
+                Cidade
+              </label>
+              <div className='relative'>
+                <input
+                  id='campo-cidade'
+                  ref={cidadeRef}
+                  value={cidade}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setCidade(value)
+                    setGlobalError(null)
+
+                    const texto = value.trim().toLowerCase()
+                    const base = cidadesBase
+                    const matches = texto
+                      ? base.filter((c) => c.toLowerCase().includes(texto))
+                      : base
+
+                    if (matches.length > 0) {
+                      setCidadeDropdownOpen(true)
+                      setCidadeFocusedIndex(0)
+                    } else {
+                      setCidadeDropdownOpen(false)
+                      setCidadeFocusedIndex(null)
+                    }
+                  }}
+                  onFocus={() => handleFocus(7)}
+                  onKeyDown={handleKeyDown(7)}
+                  placeholder='Cidade'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                />
+                <button
+                  type='button'
+                  className='absolute inset-y-0 right-1 px-1 text-[10px] text-slate-400'
+                  onClick={() => {
+                    const options = cidadesFiltradas
+                    if (!options.length) return
+                    setCidadeDropdownOpen((open) => !open)
+                    setCidadeFocusedIndex(null)
+                  }}
+                >
+                  ▼
+                </button>
+
+                {cidadeDropdownOpen && cidadesFiltradas.length > 0 && (
+                  <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs'>
+                    {cidadesFiltradas.map((c, idx) => {
+                      const focused = cidadeFocusedIndex === idx
+                      const selected = cidade === c
+                      return (
+                        <div
+                          key={c}
+                          onMouseDown={(ev) => {
+                            ev.preventDefault()
+                            selectCidadeValue(c)
+                            cidadeRef.current?.focus()
+                          }}
+                          className={`px-2 py-1 cursor-pointer ${
+                            focused
+                              ? 'bg-primary text-white'
+                              : selected
+                              ? 'bg-slate-100 text-slate-900'
+                              : 'hover:bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {c}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 8 - Bairro */}
             <div className='space-y-1'>
               <label className='text-xs text-slate-700' htmlFor='campo-bairro'>
                 Bairro
@@ -668,130 +840,31 @@ export default function FormTecladoPage() {
                   setBairro(e.target.value)
                   setGlobalError(null)
                 }}
-                onFocus={() => handleFocus(7)}
-                onKeyDown={handleKeyDown(7)}
+                onFocus={() => handleFocus(8)}
+                onKeyDown={handleKeyDown(8)}
                 placeholder='Bairro'
                 className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
               />
             </div>
 
-            {/* 8 - Cidade (dropdown custom) */}
+            {/* 9 - Número */}
             <div className='space-y-1'>
-              <label className='text-xs text-slate-700'>Cidade</label>
-              <div className='relative'>
-                <div
-                  ref={cidadeRef}
-                  tabIndex={0}
-                  onFocus={() => handleFocus(8)}
-                  onKeyDown={handleKeyDown(8)}
-                  onClick={() => {
-                    if (!uf) return
-                    setCidadeDropdownOpen((open) => !open)
-                    setCidadeFocusedIndex(null)
-                  }}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white'
-                >
-                  <span
-                    className={
-                      cidade
-                        ? 'text-sm text-slate-800'
-                        : 'text-sm text-slate-400'
-                    }
-                  >
-                    {uf
-                      ? cidade || 'Selecione a cidade'
-                      : 'Selecione primeiro o UF'}
-                  </span>
-                  <span className='text-[9px] text-slate-400 ml-2'>▾</span>
-                </div>
-
-                {cidadeDropdownOpen && (
-                  <div className='absolute z-20 mt-1 w-full max-h-52 overflow-auto rounded-md border border-border-soft bg-white shadow-sm text-xs'>
-                    {cidadesDisponiveis.length === 0 ? (
-                      <div className='px-3 py-2 text-slate-400'>
-                        Nenhuma cidade disponível
-                      </div>
-                    ) : (
-                      cidadesDisponiveis.map((c, idx) => {
-                        const focused = cidadeFocusedIndex === idx
-                        const selected = cidade === c
-                        return (
-                          <div
-                            key={c}
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              selectCidade(idx)
-                            }}
-                            className={`px-3 py-1.5 cursor-pointer ${
-                              focused
-                                ? 'bg-primary/10 text-primary'
-                                : selected
-                                ? 'bg-slate-100 text-slate-900'
-                                : 'text-slate-700 hover:bg-slate-50'
-                            }`}
-                          >
-                            {c}
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 9 - UF (dropdown custom) */}
-            <div className='space-y-1'>
-              <label className='text-xs text-slate-700'>UF</label>
-              <div className='relative'>
-                <div
-                  ref={ufRef}
-                  tabIndex={0}
-                  onFocus={() => handleFocus(9)}
-                  onKeyDown={handleKeyDown(9)}
-                  onClick={() => {
-                    setUfDropdownOpen((open) => !open)
-                    setUfFocusedIndex(null)
-                  }}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white'
-                >
-                  <span
-                    className={
-                      uf ? 'text-sm text-slate-800' : 'text-sm text-slate-400'
-                    }
-                  >
-                    {uf || 'Selecione o UF'}
-                  </span>
-                  <span className='text-[9px] text-slate-400 ml-2'>▾</span>
-                </div>
-
-                {ufDropdownOpen && (
-                  <div className='absolute z-20 mt-1 w-full max-h-52 overflow-auto rounded-md border border-border-soft bg-white shadow-sm text-xs'>
-                    {UFS.map((sigla, idx) => {
-                      const focused = ufFocusedIndex === idx
-                      const selected = uf === sigla
-                      return (
-                        <div
-                          key={sigla}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            selectUf(idx)
-                          }}
-                          className={`px-3 py-1.5 cursor-pointer ${
-                            focused
-                              ? 'bg-primary/10 text-primary'
-                              : selected
-                              ? 'bg-slate-100 text-slate-900'
-                              : 'text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          {sigla}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <label className='text-xs text-slate-700' htmlFor='campo-numero'>
+                Número
+              </label>
+              <input
+                id='campo-numero'
+                ref={numeroRef}
+                value={numero}
+                onChange={(e) => {
+                  setNumero(e.target.value)
+                  setGlobalError(null)
+                }}
+                onFocus={() => handleFocus(9)}
+                onKeyDown={handleKeyDown(9)}
+                placeholder='Número'
+                className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+              />
             </div>
 
             {/* 10 - CEP */}
@@ -1063,7 +1136,7 @@ export default function FormTecladoPage() {
               preenchidos).
             </p>
             <p>
-              Nos dropdowns de UF e Cidade: use{' '}
+              Nos combos de UF/Cidade: digite para filtrar, use{' '}
               <span className='font-medium'>F4</span> ou{' '}
               <span className='font-medium'>Espaço</span> para abrir, setas para
               navegar, <span className='font-medium'>Espaço</span> para
