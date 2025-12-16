@@ -1,14 +1,18 @@
 ﻿@page "/"
 
-<PageTitle>Início</PageTitle>
+@using AspecSLE.Services
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Aspec Licita - Início</PageTitle>
 
 <div class="space-y-10">
-    <!-- HERO -->
     <section class="grid gap-8 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-center">
         <div class="space-y-4">
             <span
                 class="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary-strong">
-                Portal de Licitações Aspec SLE
+                Portal de Licitações Aspec Licita
             </span>
 
             <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
@@ -21,14 +25,19 @@
             </p>
 
             <div class="flex flex-wrap items-center gap-3 pt-1">
-                <NavLink href="/cadastro"
-                    class="inline-flex items-center justify-center bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5 py-2 rounded-full">
+                <NavLink href="/cadastro-fornecedor"
+                         class="inline-flex items-center justify-center bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5 py-2 rounded-full">
                     Cadastrar fornecedor
                 </NavLink>
 
                 <NavLink href="/processos"
-                    class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                         class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
                     Ver processos abertos
+                </NavLink>
+
+                <NavLink href="/form-teclado"
+                         class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                    Formulário de Navegação
                 </NavLink>
 
                 <p class="text-[11px] md:text-xs text-slate-500">
@@ -37,7 +46,6 @@
             </div>
         </div>
 
-        <!-- Painel resumo -->
         <div class="rounded-2xl border border-border-soft bg-header shadow-sm p-4 md:p-5 space-y-4">
             <h2 class="text-sm font-medium text-slate-800">
                 Como a plataforma funciona?
@@ -70,7 +78,6 @@
         </div>
     </section>
 
-    <!-- PERSONAS -->
     <section class="space-y-4">
         <div class="flex items-center justify-between gap-2">
             <h2 class="text-sm md:text-base font-semibold text-slate-900">
@@ -82,10 +89,11 @@
         </div>
 
         <div class="grid gap-4 md:grid-cols-3">
-            @foreach (var p in personas)
+            @foreach (var p in _personas)
             {
-                <article
-                    class="@($"rounded-2xl border border-border-soft bg-card-bg shadow-sm overflow-hidden flex flex-col {p.Color}")">
+                <button type="button"
+                        @onclick="@(() => OnPersonaClick(p))"
+                        class="@($"text-left rounded-2xl border border-border-soft bg-card-bg shadow-sm overflow-hidden flex flex-col {p.Color} cursor-pointer transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary")">
                     <div class="p-4 flex items-center gap-3">
                         <div class="h-10 w-10 rounded-full bg-white/80 flex items-center justify-center text-lg">
                             @p.Icon
@@ -96,53 +104,280 @@
                         </div>
                     </div>
 
-                    <div class="px-4 pb-4 space-y-2 text-xs text-slate-700">
+                    <div class="px-4 pb-4 space-y-2 text-xs text-slate-700 flex-1 flex flex-col">
                         <p>@p.Description</p>
                         <p class="text-[11px] font-medium text-slate-600">
                             @p.Highlight
                         </p>
+
+                        <span class="mt-2 inline-flex items-center text-[11px] font-medium text-primary">
+                            @(p.RequiresAuth ? "Acessar (login necessário)" : "Acessar")
+                            <span class="ml-1">→</span>
+                        </span>
                     </div>
-                </article>
+                </button>
             }
+        </div>
+    </section>
+
+    <section class="space-y-4">
+        <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm md:text-base font-semibold text-slate-900">
+                Atualizações e destaques
+            </h2>
+            <span class="text-[11px] md:text-xs text-slate-500">
+                Informações recentes sobre processos, produtos e comunicados.
+            </span>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-3">
+            <article class="rounded-2xl border border-border-soft bg-white shadow-sm flex flex-col">
+                <div class="px-4 pt-4 pb-2 border-b border-slate-100">
+                    <p class="text-[11px] font-semibold tracking-wide text-primary">
+                        PROCESSOS
+                    </p>
+                    <h3 class="text-sm font-semibold text-slate-900">
+                        Processos recentemente publicados
+                    </h3>
+                </div>
+                <div class="px-4 py-3 space-y-2 text-xs text-slate-700 flex-1">
+                    <p class="text-[11px] text-slate-500">
+                        Veja rapidamente os últimos editais disponíveis para participação.
+                    </p>
+                    <ul class="space-y-1">
+                        <li class="flex items-start gap-2">
+                            <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
+                            <span>Pregão Eletrônico nº 12/2025 — Aquisição de equipamentos de TI.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
+                            <span>Concorrência nº 08/2025 — Obras de infraestrutura urbana.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
+                            <span>Tomada de Preços nº 05/2025 — Serviços de consultoria.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="px-4 pb-4 pt-1">
+                    <NavLink href="/processos"
+                             class="w-full h-8 inline-flex items-center justify-center rounded-full border border-primary-soft text-[11px] text-primary-strong bg-primary-soft/10 hover:bg-primary-soft/40">
+                        Ver todos os processos
+                    </NavLink>
+                </div>
+            </article>
+
+            <article class="rounded-2xl border border-border-soft bg-white shadow-sm flex flex-col">
+                <div class="px-4 pt-4 pb-2 border-b border-slate-100">
+                    <p class="text-[11px] font-semibold tracking-wide text-sky-600">
+                        NOVIDADES
+                    </p>
+                    <h3 class="text-sm font-semibold text-slate-900">
+                        Atualizações da plataforma
+                    </h3>
+                </div>
+                <div class="px-4 py-3 space-y-2 text-xs text-slate-700 flex-1">
+                    <p>
+                        Fique por dentro das melhorias contínuas e novos recursos
+                        disponíveis na solução de licitações da Aspec.
+                    </p>
+                    <ul class="space-y-1 text-[11px]">
+                        <li>• Novos filtros na busca de processos.</li>
+                        <li>• Painel aprimorado para acompanhamento de propostas.</li>
+                        <li>• Integração com módulos adicionais da Aspec Informática.</li>
+                    </ul>
+                </div>
+                <div class="px-4 pb-4 pt-1">
+                    <a href="https://www.aspec.com.br" target="_blank"
+                       class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
+                        Ver notícias no site da Aspec
+                    </a>
+                </div>
+            </article>
+
+            <article class="rounded-2xl border border-border-soft bg-white shadow-sm flex flex-col">
+                <div class="px-4 pt-4 pb-2 border-b border-slate-100">
+                    <p class="text-[11px] font-semibold tracking-wide text-amber-600">
+                        COMUNICADOS
+                    </p>
+                    <h3 class="text-sm font-semibold text-slate-900">
+                        Informes importantes aos usuários
+                    </h3>
+                </div>
+                <div class="px-4 py-3 space-y-2 text-xs text-slate-700 flex-1">
+                    <p>
+                        Informações sobre prazos, manutenção programada e orientações
+                        para uso da plataforma.
+                    </p>
+                    <ul class="space-y-1 text-[11px]">
+                        <li>• Janelas de manutenção agendadas e atualizações críticas.</li>
+                        <li>• Boas práticas para envio de propostas eletrônicas.</li>
+                        <li>• Orientações sobre suporte e canais de atendimento.</li>
+                    </ul>
+                </div>
+                <div class="px-4 pb-4 pt-1">
+                    <a href="https://aspec.com.br/contato/fale-conosco/" target="_blank"
+                       class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
+                        Fale com a equipe da Aspec
+                    </a>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="space-y-6">
+        <div
+            class="rounded-2xl bg-slate-900 text-slate-50 px-6 py-6 md:px-8 md:py-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-center">
+            <div class="space-y-4">
+                <p class="text-[11px] font-semibold text-amber-300 tracking-wide">
+                    TECNOLOGIA PARA GESTÃO PÚBLICA
+                </p>
+                <h2 class="text-xl md:text-2xl font-semibold tracking-tight">
+                    A tecnologia de confiança que o gestor municipal pode contar.
+                </h2>
+                <p class="text-xs md:text-sm text-slate-200 max-w-xl">
+                    A Aspec Informática atua há décadas apoiando prefeituras e câmaras
+                    municipais com soluções completas para gestão tributária, contábil
+                    e de licitações.
+                </p>
+
+                <div class="flex flex-wrap gap-4 pt-2 text-xs md:text-sm">
+                    <div class="rounded-xl bg-slate-800 px-4 py-3">
+                        <p class="text-amber-300 text-sm font-semibold">+30</p>
+                        <p class="text-[11px] uppercase tracking-wide text-slate-300">
+                            Anos de experiência
+                        </p>
+                    </div>
+                    <div class="rounded-xl bg-slate-800 px-4 py-3">
+                        <p class="text-amber-300 text-sm font-semibold">+325</p>
+                        <p class="text-[11px] uppercase tracking-wide text-slate-300">
+                            Prefeituras atendidas
+                        </p>
+                    </div>
+                    <div class="rounded-xl bg-slate-800 px-4 py-3">
+                        <p class="text-amber-300 text-sm font-semibold">+320</p>
+                        <p class="text-[11px] uppercase tracking-wide text-slate-300">
+                            Câmaras municipais
+                        </p>
+                    </div>
+                </div>
+
+                <a href="https://aspec.com.br/contato/fale-conosco/" target="_blank"
+                   class="inline-flex items-center mt-2 rounded-full bg-amber-400 text-slate-900 hover:bg-amber-300 text-xs md:text-sm font-semibold px-4 py-2">
+                    Solicitar apresentação
+                </a>
+            </div>
+
+            <div class="rounded-2xl bg-linear-to-br from-slate-800 via-slate-900 to-slate-800 p-4 md:p-5 shadow-lg">
+                <p class="text-[11px] text-amber-300 font-semibold mb-2">
+                    DEPOIMENTOS DE CLIENTES
+                </p>
+                <p class="text-xs md:text-sm text-slate-50 mb-4">
+                    “Com a Aspec, geramos os valores corretos. Em outros municípios,
+                    já utilizávamos sistemas diferentes que importavam dados errados e
+                    duplicados, causando retrabalho manual. Com a Aspec, isso não
+                    acontece.”
+                </p>
+                <p class="text-xs font-semibold">Gestor municipal</p>
+                <p class="text-[11px] text-slate-300">
+                    Cliente da solução Aspec Licita
+                </p>
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-border-soft bg-white px-4 py-4 shadow-sm">
+                <p class="text-[11px] font-semibold text-slate-500 mb-1">
+                    DEPOIMENTOS
+                </p>
+                <h3 class="text-sm font-semibold text-slate-900 mb-2">
+                    O que clientes dizem sobre a Aspec
+                </h3>
+                <p class="text-xs text-slate-700">
+                    A plataforma de licitações integra-se ao ecossistema de soluções
+                    da Aspec, garantindo segurança jurídica, rastreabilidade e suporte
+                    especializado em cada etapa do processo.
+                </p>
+            </div>
+
+            <div
+                class="rounded-2xl border border-border-soft bg-slate-900 text-slate-50 px-4 py-4 shadow-sm flex flex-col justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold text-amber-300 mb-1">
+                        VÍDEOS
+                    </p>
+                    <h3 class="text-sm font-semibold mb-2">
+                        Conheça mais sobre a atuação da Aspec
+                    </h3>
+                    <p class="text-xs text-slate-200 mb-3">
+                        Conteúdos em vídeo explicando como a tecnologia apoia a gestão
+                        pública eficiente e transparente.
+                    </p>
+                </div>
+                <a href="https://www.youtube.com/results?search_query=Aspec+Inform%C3%A1tica"
+                   target="_blank"
+                   class="inline-flex h-8 items-center rounded-full border border-amber-300 px-3 text-[11px] text-amber-200 hover:bg-amber-300/10">
+                    Ver vídeos da Aspec
+                </a>
+            </div>
         </div>
     </section>
 </div>
 
 @code {
+
     private record Persona(
-    string Title,
-    string Description,
-    string Highlight,
-    string Color,
-    string Pill,
-    string Icon
+        string Title,
+        string Description,
+        string Highlight,
+        string Color,
+        string Pill,
+        string Icon,
+        bool RequiresAuth,
+        string TargetPath
     );
 
-    private readonly Persona[] personas = new[]
+    private readonly Persona[] _personas =
+    [
+        new("Fornecedor",
+            "Cadastre-se para participar de licitações, acompanhar editais e enviar propostas de forma simplificada.",
+            "Ideal para empresas que vendem para o poder público.",
+            "bg-emerald-50",
+            "Participar de licitações",
+            "🏢",
+            true,
+            "/fornecedor"
+        ),
+        new("Comprador",
+            "Gerencie processos, organize documentos e tenha uma visão clara das etapas de cada licitação.",
+            "Transparência e rastreabilidade em cada fase.",
+            "bg-sky-50",
+            "Gestão de processos",
+            "📈",
+            true,
+            "/comprador"
+        ),
+        new("Sociedade",
+            "Acompanhe licitações públicas, visualize resultados e fortaleça o controle social.",
+            "Mais transparência nas contratações públicas.",
+            "bg-violet-50",
+            "Transparência",
+            "📣",
+            false,
+            "/sociedade"
+        )
+    ];
+
+    private void OnPersonaClick(Persona p)
     {
-new Persona(
-"Fornecedor",
-"Cadastre-se para participar de licitações, acompanhar editais e enviar propostas de forma simplificada.",
-"Ideal para empresas que vendem para o poder público.",
-"bg-emerald-50",
-"Participar de licitações",
-"🏢"
-),
-new Persona(
-"Comprador",
-"Gerencie processos, organize documentos e tenha uma visão clara das etapas de cada licitação.",
-"Transparência e rastreabilidade em cada fase.",
-"bg-sky-50",
-"Gestão de processos",
-"📈"
-),
-new Persona(
-"Sociedade",
-"Acompanhe licitações públicas, visualize resultados e fortaleça o controle social.",
-"Mais transparência nas contratações públicas.",
-"bg-violet-50",
-"Transparência",
-"📣"
-)
-};
+        if (p.RequiresAuth && !(Auth?.IsAuthenticated ?? false))
+        {
+            var redirect = Uri.EscapeDataString(p.TargetPath);
+            Nav.NavigateTo($"/entrar?redirect={redirect}");
+            return;
+        }
+
+        Nav.NavigateTo(p.TargetPath);
+    }
+
 }

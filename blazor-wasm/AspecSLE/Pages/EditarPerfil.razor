@@ -1,0 +1,356 @@
+@page "/perfil/editar"
+
+@using AspecSLE.Services
+@using AspecSLE.Utils
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Aspec Licita - Editar Perfil</PageTitle>
+
+<div class="min-h-[calc(80vh-72px)] flex items-center justify-center">
+    <div class="w-full max-w-2xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">Editar Perfil</span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Editar informações do perfil
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Atualize suas informações pessoais.
+                </p>
+            </div>
+
+            @if (_loading)
+            {
+                <!-- Loading State -->
+                <div class="px-4 py-12 flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(LoadError))
+            {
+                <!-- Error State -->
+                <div class="px-4 py-4">
+                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <div class="font-semibold mb-0.5">Erro ao carregar perfil</div>
+                        <div class="mb-2">@LoadError</div>
+                        <button @onclick="LoadProfileAsync"
+                                class="mt-1 px-3 py-1.5 bg-red-600 text-white text-[11px] rounded-md hover:bg-red-700">
+                            Tentar novamente
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Profile Header -->
+                <div class="px-4 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-border-soft">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-14 rounded-full bg-primary text-white flex items-center justify-center text-lg font-bold">
+                            @Validators.GetInitials(Validators.GetFullName(Nome, Sobrenome))
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-900">@Validators.GetFullName(Nome, Sobrenome)</h2>
+                            <p class="text-[11px] text-slate-600">@CurrentEmail</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Form -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="space-y-3">
+                        <!-- Nome e Sobrenome -->
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="nome">
+                                    Nome
+                                </label>
+                                <input id="nome"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe seu nome"
+                                       value="@Nome"
+                                       @oninput="OnNomeChanged"/>
+                                @if (!string.IsNullOrEmpty(NomeError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@NomeError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="sobrenome">
+                                    Sobrenome
+                                </label>
+                                <input id="sobrenome"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe seu sobrenome"
+                                       value="@Sobrenome"
+                                       @oninput="OnSobrenomeChanged"/>
+                                @if (!string.IsNullOrEmpty(SobrenomeError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@SobrenomeError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Telefone -->
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700" for="telefone">
+                                Telefone
+                            </label>
+                            <input id="telefone"
+                                   class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                   placeholder="(00) 00000-0000"
+                                   value="@Telefone"
+                                   @oninput="OnTelefoneChanged"
+                                   inputmode="numeric"
+                                   maxlength="15"/>
+                            @if (!string.IsNullOrEmpty(TelefoneError))
+                            {
+                                <p class="text-[10px] text-red-500 mt-0.5">@TelefoneError</p>
+                            }
+                        </div>
+
+                        <!-- E-mail (somente leitura) -->
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700">
+                                E-mail
+                            </label>
+                            <div
+                                class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                <span class="text-sm text-slate-600">@CurrentEmail</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-0.5">
+                                O e-mail não pode ser alterado.
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(GlobalError))
+                    {
+                        <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                            <div class="font-semibold mb-0.5">Erro</div>
+                            <div>@GlobalError</div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(SuccessMessage))
+                    {
+                        <div
+                            class="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                            <div class="font-semibold mb-0.5">
+                                Perfil atualizado com sucesso
+                            </div>
+                            <div>@SuccessMessage</div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="px-4 pt-1 pb-3 flex flex-col gap-2.5">
+                    <div class="grid md:grid-cols-2 gap-2.5">
+                        <button type="button"
+                                @onclick="OnCancelar"
+                                disabled="@IsSubmitting"
+                                class="h-9 w-full rounded-md border border-border-soft bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed">
+                            Cancelar
+                        </button>
+
+                        <button type="button"
+                                @onclick="OnSalvarAsync"
+                                disabled="@IsSubmitting"
+                                class="h-9 w-full rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                            @if (IsSubmitting)
+                            {
+                                <span
+                                    class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                                <span>Salvando...</span>
+                            }
+                            else
+                            {
+                                <span>Salvar alterações</span>
+                            }
+                        </button>
+                    </div>
+
+                    <div class="w-full text-center text-[11px] text-slate-600">
+                        Voltar para
+                        <a href="/perfil" class="ml-1 text-primary font-medium hover:text-primary-strong">
+                            Visualizar perfil
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    #region Campos do formulario
+
+    private string Nome { get; set; } = string.Empty;
+    private string Sobrenome { get; set; } = string.Empty;
+    private string Telefone { get; set; } = string.Empty;
+    private string CurrentEmail { get; set; } = string.Empty;
+
+    private string? NomeError { get; set; }
+    private string? SobrenomeError { get; set; }
+    private string? TelefoneError { get; set; }
+    private string? GlobalError { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? LoadError { get; set; }
+
+    private bool _loading = true;
+    private bool IsSubmitting { get; set; }
+
+    #endregion
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/entrar");
+            return;
+        }
+
+        await LoadProfileAsync();
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        _loading = true;
+        LoadError = null;
+        StateHasChanged();
+
+        var (ok, user, error) = await Auth.GetUserProfileAsync();
+
+        if (ok && user != null)
+        {
+            Nome = user.FirstName;
+            Sobrenome = user.LastName;
+            Telefone = Validators.FormatPhone(user.Phone);
+            CurrentEmail = user.Email;
+        }
+        else
+        {
+            LoadError = error ?? "Erro desconhecido ao carregar perfil.";
+        }
+
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private void OnNomeChanged(ChangeEventArgs e)
+    {
+        Nome = e.Value?.ToString() ?? string.Empty;
+        NomeError = null;
+        GlobalError = null;
+        SuccessMessage = null;
+    }
+
+    private void OnSobrenomeChanged(ChangeEventArgs e)
+    {
+        Sobrenome = e.Value?.ToString() ?? string.Empty;
+        SobrenomeError = null;
+        GlobalError = null;
+        SuccessMessage = null;
+    }
+
+    private void OnTelefoneChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        Telefone = Validators.FormatPhoneMask(value);
+        TelefoneError = null;
+        GlobalError = null;
+        SuccessMessage = null;
+    }
+
+    private bool Validate()
+    {
+        var ok = true;
+
+        NomeError = SobrenomeError = TelefoneError = GlobalError = SuccessMessage = null;
+
+        var nomeTrim = Nome.Trim();
+        if (string.IsNullOrWhiteSpace(nomeTrim))
+        {
+            NomeError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (nomeTrim.Length < 2 || nomeTrim.Length > 30)
+        {
+            NomeError = "O nome deve ter entre 2 e 30 caracteres.";
+            ok = false;
+        }
+
+        var sobrenomeTrim = Sobrenome.Trim();
+        if (string.IsNullOrWhiteSpace(sobrenomeTrim))
+        {
+            SobrenomeError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (sobrenomeTrim.Length < 2 || sobrenomeTrim.Length > 30)
+        {
+            SobrenomeError = "O sobrenome deve ter entre 2 e 30 caracteres.";
+            ok = false;
+        }
+
+        var telefoneDigits = new string(Telefone.Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(telefoneDigits))
+        {
+            TelefoneError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (!Validators.IsValidPhone(telefoneDigits))
+        {
+            TelefoneError = "Telefone inválido. Use (00) 0000-0000 ou (00) 00000-0000";
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    private async Task OnSalvarAsync()
+    {
+        if (IsSubmitting)
+            return;
+
+        if (!Validate())
+            return;
+
+        IsSubmitting = true;
+
+        try
+        {
+            var telefoneDigits = new string(Telefone.Where(char.IsDigit).ToArray());
+            var (ok, message) = await Auth.UpdateProfileAsync(Nome, Sobrenome, telefoneDigits);
+
+            if (!ok)
+            {
+                GlobalError = message ?? "Falha ao atualizar perfil.";
+                return;
+            }
+
+            SuccessMessage = message ?? "Perfil atualizado com sucesso.";
+            StateHasChanged();
+
+            await Task.Delay(2000);
+            Nav.NavigateTo("/perfil");
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void OnCancelar()
+    {
+        Nav.NavigateTo("/perfil");
+    }
+
+}

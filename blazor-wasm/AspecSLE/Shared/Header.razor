@@ -1,111 +1,143 @@
-@using Microsoft.AspNetCore.Components.Routing
+﻿@using AspecSLE.Models
+@inject AspecSLE.Services.AuthService Auth
+@inject NavigationManager Nav
 
 <header class="sticky top-0 z-40 border-b border-border-soft bg-header/95 backdrop-blur">
-  <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-6">
-    <!-- Logo + marca -->
-    <div class="flex items-center gap-3">
-      <NavLink href="/" Match="NavLinkMatch.All" class="flex items-center gap-2">
-        <div class="h-10 w-auto flex items-center">
-          <!-- Trocar pela logo real quando quiser -->
-          <span
-            class="h-9 w-24 border border-primary/40 flex items-center justify-center text-[11px] font-semibold text-primary tracking-wide">
-            ASPEC
-          </span>
+    <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3 gap-6">
+        <div class="flex items-center gap-3">
+            <NavLink href="/" Match="NavLinkMatch.All" class="flex items-center gap-2">
+                <div class="h-10 w-auto flex items-center">
+                    <img src="https://aspec.com.br/wp-content/themes/site/img/logo-aspec.svg" alt="ASPEC Logo" class="h-9 ml-2" />
+                </div>
+                <div class="leading-tight hidden sm:block">
+                    <p class="text-sm font-semibold text-slate-900">Aspec Licita</p>
+                    <p class="text-xs text-slate-500">Licitações e Contratos</p>
+                </div>
+            </NavLink>
         </div>
-        <div class="leading-tight hidden sm:block">
-          <p class="text-sm font-semibold text-slate-900">Aspec SLE</p>
-          <p class="text-xs text-slate-500">Licitações e Contratos</p>
+        
+        <nav class="hidden md:flex items-center gap-1 text-sm">
+            <NavLink href="/" Match="NavLinkMatch.All"
+                     class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
+                     ActiveClass="border-primary bg-primary-soft text-primary-strong">
+                Início
+            </NavLink>
+            <NavLink href="/processos"
+                     class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
+                     ActiveClass="border-primary bg-primary-soft text-primary-strong">
+                Processos
+            </NavLink>
+            <NavLink href="/produtos"
+                     class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
+                     ActiveClass="border-primary bg-primary-soft text-primary-strong">
+                Produtos
+            </NavLink>
+            <NavLink href="/planos"
+                     class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
+                     ActiveClass="border-primary bg-primary-soft text-primary-strong">
+                Planos
+            </NavLink>
+            <a href="https://aspec.com.br/contato/fale-conosco/"
+               target="_blank"
+               class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong">
+                Contato
+            </a>
+        </nav>
+        
+        <div class="flex items-center gap-3">
+            @if (_user is null)
+            {
+                <!-- NÃO logado: Entrar + Cadastro -->
+                <div class="flex items-center gap-2">
+                    <NavLink href="/entrar"
+                             class="px-3 py-1.5 rounded-full text-xs text-slate-700 hover:text-primary-strong hover:bg-primary-soft/50">
+                        Entrar
+                    </NavLink>
+
+                    <NavLink href="/cadastro"
+                             class="px-4 py-1.5 rounded-full text-xs bg-primary text-white hover:bg-primary-strong">
+                        Cadastro
+                    </NavLink>
+                </div>
+            }
+            else
+            {
+                <!-- Logado: card de usuário -->
+                <div class="relative">
+                    <button @onclick="ToggleUserMenu"
+                            class="flex items-center gap-2 rounded-full border border-border-soft px-2 py-1 text-xs text-slate-600 hover:border-primary hover:bg-primary-soft/60">
+                        <div class="h-7 w-7 rounded-full border border-border-soft flex items-center justify-center bg-white text-[10px]">
+                            @Initials
+                        </div>
+                        <span class="hidden sm:inline">@_user.FullName</span>
+                    </button>
+
+                    @if (_isUserMenuOpen)
+                    {
+                        <div class="absolute right-0 mt-2 w-40 rounded-md border border-border-soft bg-white shadow-lg text-xs z-50">
+                            <div class="px-3 py-2 font-semibold text-slate-700">
+                                @_user.FullName
+                            </div>
+                            <div class="border-t border-border-soft/70"></div>
+                            <NavLink href="/perfil" class="block w-full text-left px-3 py-2 hover:bg-primary-soft/60"
+                                     @onclick="() => _isUserMenuOpen = false">
+                                Perfil
+                            </NavLink>
+                            <button class="block w-full text-left px-3 py-2 hover:bg-primary-soft/60">
+                                Configurações
+                            </button>
+                            <div class="border-t border-border-soft/70"></div>
+                            <button class="block w-full text-left px-3 py-2 text-red-600 hover:bg-primary-soft/60"
+                                    @onclick="LogoutAsync">
+                                Sair
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
         </div>
-      </NavLink>
     </div>
-
-    <!-- Menu principal -->
-    <nav class="hidden md:flex items-center gap-1 text-sm">
-      <NavLink href="/" Match="NavLinkMatch.All"
-        class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
-        ActiveClass="border-primary bg-primary-soft text-primary-strong">
-        Início
-      </NavLink>
-
-      <NavLink href="/processos"
-        class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
-        ActiveClass="border-primary bg-primary-soft text-primary-strong">
-        Processos
-      </NavLink>
-
-      <NavLink href="/produtos"
-        class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
-        ActiveClass="border-primary bg-primary-soft text-primary-strong">
-        Produtos
-      </NavLink>
-
-      <NavLink href="/planos"
-        class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong"
-        ActiveClass="border-primary bg-primary-soft text-primary-strong">
-        Planos
-      </NavLink>
-
-      <!-- Contato: pode ser rota interna ou link externo -->
-      <a href="https://aspec.com.br/contato/fale-conosco/" target="_blank"
-        class="px-3 py-1.5 rounded-full border border-transparent text-xs text-slate-600 hover:bg-primary-soft/60 hover:text-primary-strong">
-        Contato
-      </a>
-    </nav>
-
-    <!-- Ações: Entrar / Cadastro + “Usuário” -->
-    <div class="flex items-center gap-3">
-      <div class="hidden sm:flex items-center gap-2">
-        <NavLink href="/entrar"
-          class="px-3 py-1.5 rounded-full text-xs text-slate-700 hover:text-primary-strong hover:bg-primary-soft/50">
-          Entrar
-        </NavLink>
-
-        <NavLink href="/cadastro"
-          class="px-4 py-1.5 rounded-full text-xs bg-primary text-white hover:bg-primary-strong">
-          Cadastro
-        </NavLink>
-      </div>
-
-      <!-- Menu de usuário simples -->
-      <div class="relative">
-        <button @onclick="ToggleUserMenu"
-          class="flex items-center gap-2 rounded-full border border-border-soft px-2 py-1 text-xs text-slate-600 hover:border-primary hover:bg-primary-soft/60">
-          <div
-            class="h-7 w-7 rounded-full border border-border-soft flex items-center justify-center bg-white text-[10px]">
-            US
-          </div>
-          <span class="hidden sm:inline">Usuário</span>
-        </button>
-
-        @if (isUserMenuOpen)
-        {
-          <div class="absolute right-0 mt-2 w-40 rounded-md border border-border-soft bg-white shadow-lg text-xs z-50">
-            <div class="px-3 py-2 font-semibold text-slate-700">
-              Usuário
-            </div>
-            <div class="border-t border-border-soft/70" />
-            <button class="block w-full text-left px-3 py-2 hover:bg-primary-soft/60">
-              Perfil
-            </button>
-            <button class="block w-full text-left px-3 py-2 hover:bg-primary-soft/60">
-              Configurações
-            </button>
-            <div class="border-t border-border-soft/70" />
-            <button class="block w-full text-left px-3 py-2 hover:bg-primary-soft/60">
-              Sair
-            </button>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
 </header>
 
 @code {
-  private bool isUserMenuOpen;
+    private AuthUser? _user;
+    private bool _isUserMenuOpen;
 
-  private void ToggleUserMenu()
-  {
-    isUserMenuOpen = !isUserMenuOpen;
-  }
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.AuthStateChanged += OnAuthStateChanged;
+        await Auth.InitializeAsync();
+        _user = Auth.CurrentUser;
+    }
+
+    private void OnAuthStateChanged()
+    {
+        _user = Auth.CurrentUser;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string Initials =>
+        string.IsNullOrWhiteSpace(_user?.FullName)
+            ? "US"
+            : string.Join("",
+                _user.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Take(2)
+                    .Select(p => char.ToUpperInvariant(p[0])));
+
+    private void ToggleUserMenu()
+    {
+        _isUserMenuOpen = !_isUserMenuOpen;
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        _isUserMenuOpen = false;
+        Nav.NavigateTo("/entrar");
+    }
+
+    public void Dispose()
+    {
+        Auth.AuthStateChanged -= OnAuthStateChanged;
+    }
 }

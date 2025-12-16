@@ -1,0 +1,1400 @@
+@page "/cadastro-fornecedor"
+
+@using AspecSLE.Utils
+@using AspecSLE.Services
+@using System.Text.Json.Serialization
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<div class="min-h-[calc(80vh-72px)] flex items-center justify-center py-6">
+    <div class="w-full max-w-5xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">Cadastro de Fornecedor</span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <!-- Header -->
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Cadastro de Fornecedor - Pessoa Jurídica
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Preencha os dados da empresa para realizar o cadastro no sistema.
+                </p>
+            </div>
+
+            <!-- Navigation Steps -->
+            <div class="px-4 pt-3 pb-2 border-b border-border-soft">
+                <div class="flex items-center gap-2 overflow-x-auto">
+                    <button @onclick="() => SetStep(1)" class="@GetStepClass(1) shrink-0">
+                        <span class="text-xs font-medium">Fornecedor</span>
+                    </button>
+                    <div class="text-slate-300">/</div>
+
+                    <button @onclick="() => SetStep(2)" class="@GetStepClass(2) shrink-0" disabled="@(!_step1Valid)">
+                        <span class="text-xs font-medium">Representantes legais</span>
+                    </button>
+                    <div class="text-slate-300">/</div>
+
+                    <button @onclick="() => SetStep(3)" class="@GetStepClass(3) shrink-0" disabled="@(!_step2Valid)">
+                        <span class="text-xs font-medium">Usuários</span>
+                    </button>
+                    <div class="text-slate-300">/</div>
+
+                    <button @onclick="() => SetStep(4)" class="@GetStepClass(4) shrink-0" disabled="@(!_step3Valid)">
+                        <span class="text-xs font-medium">Bens/Serviços</span>
+                    </button>
+                    <div class="text-slate-300">/</div>
+
+                    <button @onclick="() => SetStep(5)" class="@GetStepClass(5) shrink-0" disabled="@(!_step4Valid)">
+                        <span class="text-xs font-medium">Documentos</span>
+                    </button>
+                </div>
+            </div>
+
+            @if (_currentStep == 1)
+            {
+                <!-- Step 1: Fornecedor -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="space-y-3">
+                        <!-- Tipo de Pessoa e Natureza Jurídica -->
+                        <div class="grid md:grid-cols-3 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="tipoPessoa">Tipo de pessoa</label>
+                                <select id="tipoPessoa"
+                                        @ref="_tipoPessoaRef"
+                                        class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                        @onchange="OnTipoPessoaChanged"
+                                        @onfocus="@(async _ => await OnFieldFocusAsync(0))"
+                                        @onkeydown="@(e => OnFieldKeyDownAsync(0, e))">
+                                    <option value="">Tipo</option>
+                                    <option value="PJ" selected>Pessoa Jurídica</option>
+                                    <option value="PF">Pessoa Física</option>
+                                </select>
+                                @if (!string.IsNullOrEmpty(TipoPessoaError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@TipoPessoaError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="naturezaJuridica">Natureza jurídica</label>
+                                <select id="naturezaJuridica"
+                                        @ref="_naturezaJuridicaRef"
+                                        class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                        @onchange="OnNaturezaJuridicaChanged"
+                                        @onfocus="@(async _ => await OnFieldFocusAsync(1))"
+                                        @onkeydown="@(e => OnFieldKeyDownAsync(1, e))">
+                                    <option value="">Informe a natureza jurídica da empresa</option>
+                                    <option>Associação Privada</option>
+                                    <option>Autarquia</option>
+                                    <option>Empresa de Pequeno Porte (EPP)</option>
+                                    <option>Empresa Individual (EI)</option>
+                                    <option>Empresa Individual de Responsabilidade Limitada (EIRELI)</option>
+                                    <option>Empresa Pública (EP)</option>
+                                    <option>Fundação</option>
+                                    <option>Fundação Privada (FP)</option>
+                                    <option>Microempreendedor Individual (MEI)</option>
+                                    <option>Microempresa (ME)</option>
+                                    <option>Sociedade Anônima (SA)</option>
+                                    <option>Sociedade Cooperativa (COOP)</option>
+                                    <option>Sociedade de Economia Mista (SEM)</option>
+                                    <option>Sociedade em Comandita por Ações (SCA)</option>
+                                    <option>Sociedade em Comandita Simples (SCS)</option>
+                                    <option>Sociedade em Conta de Participação (SCP)</option>
+                                    <option>Sociedade em Nome Coletivo (SNC)</option>
+                                    <option>Sociedade Empresária (SE)</option>
+                                    <option>Sociedade Pura (SP)</option>
+                                    <option>Sociedades Cooperativas de Pequeno Porte (SCPP)</option>
+                                    <option>Outro</option>
+                                </select>
+                                @if (!string.IsNullOrEmpty(NaturezaJuridicaError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@NaturezaJuridicaError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="razaoSocial">Razão Social</label>
+                                <input id="razaoSocial"
+                                       @ref="_razaoSocialRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe a razão social"
+                                       value="@RazaoSocial"
+                                       @oninput="OnRazaoSocialChanged"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(2))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(2, e))"/>
+                                @if (!string.IsNullOrEmpty(RazaoSocialError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@RazaoSocialError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Nome Fantasia e CNPJ -->
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="nomeFantasia">Nome Fantasia</label>
+                                <input id="nomeFantasia"
+                                       @ref="_nomeFantasiaRef"
+                                       maxlength="25"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe o nome fantasia"
+                                       value="@NomeFantasia"
+                                       @oninput="OnNomeFantasiaChanged"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(3))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(3, e))"/>
+                                @if (!string.IsNullOrEmpty(NomeFantasiaError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@NomeFantasiaError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="cnpj">CNPJ</label>
+                                <input id="cnpj"
+                                       @ref="_cnpjRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="00.000.000/0000-00"
+                                       value="@Cnpj"
+                                       @oninput="OnCnpjChanged"
+                                       inputmode="numeric"
+                                       maxlength="18"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(4))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(4, e))"/>
+                                @if (!string.IsNullOrEmpty(CnpjError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@CnpjError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- CEP, Endereço e Bairro -->
+                        <div class="grid md:grid-cols-[0.8fr,2fr,1.2fr] gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="cep">CEP</label>
+                                <input id="cep"
+                                       @ref="_cepRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="00000-000"
+                                       value="@Cep"
+                                       @oninput="OnCepChanged"
+                                       inputmode="numeric"
+                                       maxlength="9"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(5))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(5, e))"/>
+                                @if (!string.IsNullOrEmpty(CepError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@CepError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="endereco">Endereço</label>
+                                <input id="endereco"
+                                       @ref="_ufRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe o endereço"
+                                       value="@Endereco"
+                                       @oninput="OnEnderecoChanged"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(6))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(6, e))"/>
+                                @if (!string.IsNullOrEmpty(EnderecoError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@EnderecoError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="bairro">Bairro</label>
+                                <input id="bairro"
+                                       @ref="_bairroRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe o bairro"
+                                       value="@Bairro"
+                                       @oninput="OnBairroChanged"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(7))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(7, e))"/>
+                                @if (!string.IsNullOrEmpty(BairroError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@BairroError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- UF, Município e Complemento -->
+                        <div class="grid md:grid-cols-[0.6fr,1.5fr,1.9fr] gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="uf">UF</label>
+                                <select id="uf"
+                                        @ref="_ufRef"
+                                        class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                        @onchange="OnUfChanged"
+                                        @onfocus="@(async _ => await OnFieldFocusAsync(8))"
+                                        @onkeydown="@(e => OnFieldKeyDownAsync(8, e))">
+                                    <option value="">UF</option>
+                                    <option value="AC">AC</option>
+                                    <option value="AL">AL</option>
+                                    <option value="AP">AP</option>
+                                    <option value="AM">AM</option>
+                                    <option value="BA">BA</option>
+                                    <option value="CE">CE</option>
+                                    <option value="DF">DF</option>
+                                    <option value="ES">ES</option>
+                                    <option value="GO">GO</option>
+                                    <option value="MA">MA</option>
+                                    <option value="MT">MT</option>
+                                    <option value="MS">MS</option>
+                                    <option value="MG">MG</option>
+                                    <option value="PA">PA</option>
+                                    <option value="PB">PB</option>
+                                    <option value="PR">PR</option>
+                                    <option value="PE">PE</option>
+                                    <option value="PI">PI</option>
+                                    <option value="RJ">RJ</option>
+                                    <option value="RN">RN</option>
+                                    <option value="RS">RS</option>
+                                    <option value="RO">RO</option>
+                                    <option value="RR">RR</option>
+                                    <option value="SC">SC</option>
+                                    <option value="SP">SP</option>
+                                    <option value="SE">SE</option>
+                                    <option value="TO">TO</option>
+                                </select>
+                                @if (!string.IsNullOrEmpty(UfError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@UfError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="municipio">Município</label>
+                                <select id="municipio"
+                                        @ref="_municipioRef"
+                                        class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                        @onchange="OnMunicipioChanged"
+                                        disabled="@string.IsNullOrEmpty(Uf)"
+                                        @onfocus="@(async _ => await OnFieldFocusAsync(9))"
+                                        @onkeydown="@(e => OnFieldKeyDownAsync(9, e))">
+                                    <option value="">Selecione o município</option>
+                                    @foreach (var municipio in _municipios)
+                                    {
+                                        <option value="@municipio">@municipio</option>
+                                    }
+                                </select>
+                                @if (!string.IsNullOrEmpty(MunicipioError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@MunicipioError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="complemento">Complemento</label>
+                                <input id="complemento"
+                                       @ref="_complementoRef"
+                                       maxlength="35"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Complemento (opcional)"
+                                       value="@Complemento"
+                                       @oninput="OnComplementoChanged"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(10))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(10, e))"/>
+                            </div>
+                        </div>
+
+                        <!-- Telefone, WhatsApp e E-mail -->
+                        <div class="grid md:grid-cols-3 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="telefone">Telefone</label>
+                                <input id="telefone"
+                                       @ref="_telefoneRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="(00) 0000-0000"
+                                       value="@Telefone"
+                                       @oninput="OnTelefoneChanged"
+                                       inputmode="numeric"
+                                       maxlength="15"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(11))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(11, e))"/>
+                                @if (!string.IsNullOrEmpty(TelefoneError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@TelefoneError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="whatsapp">WhatsApp</label>
+                                <input id="whatsapp"
+                                       @ref="_whatsappRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="(00) 00000-0000"
+                                       value="@Whatsapp"
+                                       @oninput="OnWhatsappChanged"
+                                       inputmode="numeric"
+                                       maxlength="15"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(12))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(12, e))"/>
+                                @if (!string.IsNullOrEmpty(WhatsappError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@WhatsappError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="email">E-mail</label>
+                                <input id="email"
+                                       @ref="_emailRef"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe um e-mail válido"
+                                       value="@Email"
+                                       @oninput="OnEmailChanged"
+                                       type="email"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(14))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(14, e))"/>
+                                @if (!string.IsNullOrEmpty(EmailError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@EmailError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Site, Inscrição Estadual e Municipal -->
+                        <div class="grid md:grid-cols-[2fr,1fr,1fr] gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="site">Site</label>
+                                <input id="site"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="www.seusite.com.br"
+                                       value="@Site"
+                                       @oninput="OnSiteChanged"/>
+                                @if (!string.IsNullOrEmpty(SiteError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@SiteError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="inscricaoEstadual">Inscrição estadual</label>
+                                <input id="inscricaoEstadual"
+                                       @ref="_inscricaoEstadualRef"
+                                       maxlength="20"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="000000000"
+                                       value="@InscricaoEstadual"
+                                       @oninput="OnInscricaoEstadualChanged"
+                                       inputmode="numeric"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(15))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(15, e))"/>
+                                @if (!string.IsNullOrEmpty(InscricaoEstadualError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@InscricaoEstadualError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="inscricaoMunicipal">Inscrição
+                                    municipal</label>
+                                <input id="inscricaoMunicipal"
+                                       @ref="_inscricaoMunicipalRef"
+                                       maxlength="20"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="00000000000"
+                                       value="@InscricaoMunicipal"
+                                       @oninput="OnInscricaoMunicipalChanged"
+                                       inputmode="numeric"
+                                       @onfocus="@(async _ => await OnFieldFocusAsync(16))"
+                                       @onkeydown="@(e => OnFieldKeyDownAsync(16, e))"/>
+                                @if (!string.IsNullOrEmpty(InscricaoMunicipalError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@InscricaoMunicipalError</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(GlobalError))
+                    {
+                        <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                            <div class="font-semibold mb-0.5">Erro</div>
+                            <div>@GlobalError</div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_currentStep == 2)
+            {
+                <!-- Step 2: Representantes Legais -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="text-center py-8 text-slate-600">
+                        <p class="text-sm">Funcionalidade em desenvolvimento</p>
+                        <p class="text-xs mt-1">Em breve você poderá cadastrar os representantes legais</p>
+                    </div>
+                </div>
+            }
+
+            @if (_currentStep == 3)
+            {
+                <!-- Step 3: Usuários -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="text-center py-8 text-slate-600">
+                        <p class="text-sm">Funcionalidade em desenvolvimento</p>
+                        <p class="text-xs mt-1">Em breve você poderá cadastrar usuários</p>
+                    </div>
+                </div>
+            }
+
+            @if (_currentStep == 4)
+            {
+                <!-- Step 4: Bens e Serviços -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="text-center py-8 text-slate-600">
+                        <p class="text-sm">Funcionalidade em desenvolvimento</p>
+                        <p class="text-xs mt-1">Em breve você poderá cadastrar bens e serviços ofertados</p>
+                    </div>
+                </div>
+            }
+
+            @if (_currentStep == 5)
+            {
+                <!-- Step 5: Documentos -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="text-center py-8 text-slate-600">
+                        <p class="text-sm">Funcionalidade em desenvolvimento</p>
+                        <p class="text-xs mt-1">Em breve você poderá fazer upload dos documentos</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Footer Actions -->
+            <div class="p-4 border-t border-border-soft">
+                <div class="flex items-center justify-between gap-3">
+                    @if (_currentStep > 1)
+                    {
+                        <button type="button"
+                                @onclick="PreviousStep"
+                                class="h-9 px-6 rounded-md border border-border-soft bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">
+                            Voltar
+                        </button>
+                    }
+                    else
+                    {
+                        <div></div>
+                    }
+
+                    <div class="flex gap-2">
+                        @if (_currentStep < 5)
+                        {
+                            <button type="button"
+                                    @onclick="NextStep"
+                                    disabled="@IsSubmitting"
+                                    class="h-9 px-6 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed">
+                                Próximo
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    @onclick="OnSalvarAsync"
+                                    disabled="@IsSubmitting"
+                                    class="h-9 px-6 rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                                @if (IsSubmitting)
+                                {
+                                    <span
+                                        class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                                    <span>Salvando...</span>
+                                }
+                                else
+                                {
+                                    <span>Salvar</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+
+    #region Referências dos campos
+
+    private ElementReference _tipoPessoaRef;
+    private ElementReference _naturezaJuridicaRef;
+    private ElementReference _razaoSocialRef;
+    private ElementReference _nomeFantasiaRef;
+    private ElementReference _cnpjRef;
+    private ElementReference _cepRef;
+    private ElementReference _enderecoRef;
+    private ElementReference _bairroRef;
+    private ElementReference _ufRef;
+    private ElementReference _municipioRef;
+    private ElementReference _complementoRef;
+    private ElementReference _telefoneRef;
+    private ElementReference _whatsappRef;
+    private ElementReference _emailRef;
+    private ElementReference _siteRef;
+    private ElementReference _inscricaoEstadualRef;
+    private ElementReference _inscricaoMunicipalRef;
+
+    #endregion
+
+    #region Campos do formulario
+
+    private const int FirstFieldIndexStep1 = 0;
+    private const int LastFieldIndexStep1 = 16;
+
+    private int _currentStep = 1;
+    private bool _step1Valid;
+    private readonly bool _step2Valid = false;
+    private readonly bool _step3Valid = false;
+    private readonly bool _step4Valid = false;
+
+    private List<string> _municipios = [];
+
+    private string TipoPessoa { get; set; } = "PJ";
+    private string NaturezaJuridica { get; set; } = string.Empty;
+    private string RazaoSocial { get; set; } = string.Empty;
+    private string NomeFantasia { get; set; } = string.Empty;
+    private string Cnpj { get; set; } = string.Empty;
+    private string Cep { get; set; } = string.Empty;
+    private string Endereco { get; set; } = string.Empty;
+    private string Bairro { get; set; } = string.Empty;
+    private string Uf { get; set; } = string.Empty;
+    private string Municipio { get; set; } = string.Empty;
+    private string Complemento { get; set; } = string.Empty;
+    private string Telefone { get; set; } = string.Empty;
+    private string Whatsapp { get; set; } = string.Empty;
+    private string Email { get; set; } = string.Empty;
+    private string Site { get; set; } = string.Empty;
+    private string InscricaoEstadual { get; set; } = string.Empty;
+    private string InscricaoMunicipal { get; set; } = string.Empty;
+
+    private string? TipoPessoaError { get; set; }
+    private string? NaturezaJuridicaError { get; set; }
+    private string? RazaoSocialError { get; set; }
+    private string? NomeFantasiaError { get; set; }
+    private string? CnpjError { get; set; }
+    private string? CepError { get; set; }
+    private string? EnderecoError { get; set; }
+    private string? BairroError { get; set; }
+    private string? UfError { get; set; }
+    private string? MunicipioError { get; set; }
+    private string? TelefoneError { get; set; }
+    private string? WhatsappError { get; set; }
+    private string? EmailError { get; set; }
+    private string? SiteError { get; set; }
+    private string? InscricaoEstadualError { get; set; }
+    private string? InscricaoMunicipalError { get; set; }
+    private string? GlobalError { get; set; }
+
+    private bool IsSubmitting { get; set; }
+
+    #endregion
+
+    private void SetStep(int step)
+    {
+        _currentStep = step;
+    }
+
+    private string GetStepClass(int step)
+    {
+        if (_currentStep == step)
+            return "px-3 py-1.5 rounded-md bg-primary text-white";
+
+        return "px-3 py-1.5 rounded-md text-slate-600 hover:bg-slate-100";
+    }
+
+    private void NextStep()
+    {
+        if (_currentStep == 1 && ValidarStep1())
+        {
+            _step1Valid = true;
+            _currentStep++;
+        }
+        else if (_currentStep is > 1 and < 5)
+        {
+            _currentStep++;
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (_currentStep > 1)
+            _currentStep--;
+    }
+
+    private bool ValidarStep1()
+    {
+        var valido = true;
+        LimparErros();
+
+        // NATUREZA JURÍDICA – obrigatório (PJ)
+        if (string.IsNullOrWhiteSpace(NaturezaJuridica) && TipoPessoa == "PJ")
+        {
+            NaturezaJuridicaError = "Selecione a natureza jurídica.";
+            valido = false;
+        }
+
+        // RAZÃO SOCIAL – obrigatória, máx. 60
+        var razao = (RazaoSocial).Trim();
+        if (string.IsNullOrWhiteSpace(razao))
+        {
+            RazaoSocialError = "A razão social é obrigatória.";
+            valido = false;
+        }
+        else if (razao.Length > 60)
+        {
+            RazaoSocialError = "A razão social deve ter no máximo 60 caracteres.";
+            valido = false;
+        }
+
+        // NOME FANTASIA – opcional, máx. 25
+        var fantasia = (NomeFantasia).Trim();
+        if (fantasia.Length > 25)
+        {
+            NomeFantasiaError = "O nome fantasia deve ter no máximo 25 caracteres.";
+            valido = false;
+        }
+
+        // CNPJ – obrigatório e válido somente para PJ
+        if (TipoPessoa == "PJ")
+        {
+            if (string.IsNullOrWhiteSpace(Cnpj))
+            {
+                CnpjError = "O CNPJ é obrigatório.";
+                valido = false;
+            }
+            else if (!Validators.ValidarCnpj(Cnpj))
+            {
+                CnpjError = "CNPJ inválido.";
+                valido = false;
+            }
+        }
+
+        // CEP, ENDEREÇO, BAIRRO, UF, MUNICÍPIO – obrigatórios
+        if (string.IsNullOrWhiteSpace(Cep))
+        {
+            CepError = "O CEP é obrigatório.";
+            valido = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Endereco))
+        {
+            EnderecoError = "O endereço é obrigatório.";
+            valido = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Bairro))
+        {
+            BairroError = "O bairro é obrigatório.";
+            valido = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Uf))
+        {
+            UfError = "Selecione o UF.";
+            valido = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Municipio))
+        {
+            MunicipioError = "Selecione o município.";
+            valido = false;
+        }
+
+        // TELEFONE – obrigatório, formato válido
+        var telefoneDigits = new string((Telefone).Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(telefoneDigits))
+        {
+            TelefoneError = "O telefone é obrigatório.";
+            valido = false;
+        }
+        else if (!Validators.IsValidPhone(telefoneDigits))
+        {
+            TelefoneError = "Telefone inválido. Use (00) 0000-0000 ou (00) 00000-0000.";
+            valido = false;
+        }
+
+        // WhatsApp – opcional, mas se informado precisa ser válido
+        var whatsappDigits = new string((Whatsapp).Where(char.IsDigit).ToArray());
+        if (!string.IsNullOrWhiteSpace(whatsappDigits) && !Validators.IsValidPhone(whatsappDigits))
+        {
+            WhatsappError = "WhatsApp inválido. Use (00) 0000-0000 ou (00) 00000-0000.";
+            valido = false;
+        }
+
+        // EMAIL – obrigatório, sintaxe correta
+        var emailTrim = (Email).Trim();
+        if (string.IsNullOrWhiteSpace(emailTrim))
+        {
+            EmailError = "O e-mail é obrigatório.";
+            valido = false;
+        }
+        else if (!Validators.IsValidEmail(emailTrim))
+        {
+            EmailError = "E-mail inválido.";
+            valido = false;
+        }
+
+        // SITE – opcional, mas se informado precisa ter URL válida
+        var siteTrim = (Site).Trim();
+        if (!string.IsNullOrWhiteSpace(siteTrim) &&
+            !Uri.TryCreate(siteTrim.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? siteTrim
+                    : $"https://{siteTrim}",
+                UriKind.Absolute,
+                out _))
+        {
+            SiteError = "Informe uma URL válida (ex: www.seusite.com.br).";
+            valido = false;
+        }
+
+        // INSCRIÇÕES – opcional, mas limita tamanho (já garantido por maxlength; aqui reforçamos)
+        if (!string.IsNullOrWhiteSpace(InscricaoEstadual) && InscricaoEstadual.Length > 20)
+        {
+            InscricaoEstadualError = "Máximo de 20 caracteres.";
+            valido = false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(InscricaoMunicipal) && InscricaoMunicipal.Length > 20)
+        {
+            InscricaoMunicipalError = "Máximo de 20 caracteres.";
+            valido = false;
+        }
+
+        return valido;
+    }
+
+    private void LimparErros()
+    {
+        NaturezaJuridicaError = null;
+        RazaoSocialError = null;
+        NomeFantasiaError = null;
+        CnpjError = null;
+        CepError = null;
+        EnderecoError = null;
+        BairroError = null;
+        UfError = null;
+        MunicipioError = null;
+        EmailError = null;
+        GlobalError = null;
+    }
+
+    private void OnTipoPessoaChanged(ChangeEventArgs e)
+    {
+        TipoPessoa = e.Value?.ToString() ?? "PJ";
+        TipoPessoaError = null;
+    }
+
+    private void OnNaturezaJuridicaChanged(ChangeEventArgs e)
+    {
+        NaturezaJuridica = e.Value?.ToString() ?? string.Empty;
+        NaturezaJuridicaError = null;
+    }
+
+    private void OnRazaoSocialChanged(ChangeEventArgs e)
+    {
+        RazaoSocial = e.Value?.ToString() ?? string.Empty;
+        RazaoSocialError = null;
+    }
+
+    private void OnNomeFantasiaChanged(ChangeEventArgs e)
+    {
+        NomeFantasia = e.Value?.ToString() ?? string.Empty;
+        NomeFantasiaError = null;
+    }
+
+    private void OnCnpjChanged(ChangeEventArgs e)
+    {
+        var valor = e.Value?.ToString() ?? string.Empty;
+        Cnpj = Validators.FormatarCnpj(valor);
+        CnpjError = null;
+    }
+
+    private async Task OnCepChanged(ChangeEventArgs e)
+    {
+        var valor = e.Value?.ToString() ?? string.Empty;
+        Cep = Validators.FormatarCep(valor);
+        CepError = null;
+
+        var digits = new string(Cep.Where(char.IsDigit).ToArray());
+        if (digits.Length == 8)
+        {
+            await BuscarEnderecoPorCepAsync(digits);
+        }
+    }
+
+    private void OnEnderecoChanged(ChangeEventArgs e)
+    {
+        Endereco = e.Value?.ToString() ?? string.Empty;
+        EnderecoError = null;
+    }
+
+    private void OnBairroChanged(ChangeEventArgs e)
+    {
+        Bairro = e.Value?.ToString() ?? string.Empty;
+        BairroError = null;
+    }
+
+    private void OnUfChanged(ChangeEventArgs e)
+    {
+        Uf = e.Value?.ToString() ?? string.Empty;
+        Municipio = string.Empty;
+        CarregarMunicipios();
+        UfError = null;
+    }
+
+    private void OnMunicipioChanged(ChangeEventArgs e)
+    {
+        Municipio = e.Value?.ToString() ?? string.Empty;
+        MunicipioError = null;
+    }
+
+    private void OnComplementoChanged(ChangeEventArgs e)
+    {
+        Complemento = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnTelefoneChanged(ChangeEventArgs e)
+    {
+        var valor = e.Value?.ToString() ?? string.Empty;
+        Telefone = Validators.FormatarTelefone(valor);
+        TelefoneError = null;
+    }
+
+    private void OnWhatsappChanged(ChangeEventArgs e)
+    {
+        var valor = e.Value?.ToString() ?? string.Empty;
+        Whatsapp = Validators.FormatarTelefone(valor);
+        WhatsappError = null;
+    }
+
+    private void OnEmailChanged(ChangeEventArgs e)
+    {
+        Email = e.Value?.ToString() ?? string.Empty;
+        EmailError = null;
+    }
+
+    private void OnSiteChanged(ChangeEventArgs e)
+    {
+        Site = e.Value?.ToString() ?? string.Empty;
+        SiteError = null;
+    }
+
+    private void OnInscricaoEstadualChanged(ChangeEventArgs e)
+    {
+        InscricaoEstadual = e.Value?.ToString() ?? string.Empty;
+        InscricaoEstadualError = null;
+    }
+
+    private void OnInscricaoMunicipalChanged(ChangeEventArgs e)
+    {
+        InscricaoMunicipal = e.Value?.ToString() ?? string.Empty;
+        InscricaoMunicipalError = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _currentStep == 1)
+        {
+            await FocusFieldAsync(FirstFieldIndexStep1);
+        }
+    }
+
+    private async Task OnSalvarAsync()
+    {
+        if (!ValidarStep1())
+            return;
+
+        IsSubmitting = true;
+        GlobalError = null;
+        StateHasChanged();
+
+        try
+        {
+            // Simular salvamento
+            await Task.Delay(1500);
+
+            // Aqui você faria a chamada à API
+            // await FornecedorService.CadastrarAsync(request);
+
+            NavigationManager.NavigateTo("/fornecedores");
+        }
+        catch (Exception ex)
+        {
+            GlobalError = $"Erro ao salvar: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CarregarMunicipios()
+    {
+        _municipios = MunicipiosPorUfService.ObterPorUf(Uf).ToList();
+    }
+
+    private async Task BuscarEnderecoPorCepAsync(string cepDigits)
+    {
+        try
+        {
+            var url = $"https://viacep.com.br/ws/{cepDigits}/json/";
+            var result = await Http.GetFromJsonAsync<ViaCepResponse>(url);
+
+            if (result is null || result.Erro)
+                return;
+
+            Endereco = result.Logradouro ?? Endereco;
+            Bairro = result.Bairro ?? Bairro;
+            Uf = result.Uf ?? Uf;
+            Municipio = result.Localidade ?? Municipio;
+
+            // recarrega a lista de municípios quando o UF é alterado
+            CarregarMunicipios();
+
+            // garante que o município retornado esteja selecionado, se existir na lista
+            if (!string.IsNullOrWhiteSpace(Municipio) && _municipios.Contains(Municipio))
+            {
+                // já está certo
+            }
+        }
+        catch
+        {
+            // Em produção você pode logar o erro.
+            // Se a API de CEP falhar, o usuário ainda pode digitar manualmente.
+        }
+    }
+
+    private class ViaCepResponse
+    {
+        [JsonPropertyName("logradouro")] public string? Logradouro { get; init; }
+
+        [JsonPropertyName("bairro")] public string? Bairro { get; init; }
+
+        [JsonPropertyName("localidade")] public string? Localidade { get; init; }
+
+        [JsonPropertyName("uf")] public string? Uf { get; init; }
+
+        [JsonPropertyName("erro")] public bool Erro { get; init; }
+    }
+
+    private async Task FocusFieldAsync(int index)
+    {
+        try
+        {
+            switch (index)
+            {
+                case 0:
+                    await _tipoPessoaRef.FocusAsync();
+                    break;
+                case 1:
+                    await _naturezaJuridicaRef.FocusAsync();
+                    break;
+                case 2:
+                    await _razaoSocialRef.FocusAsync();
+                    break;
+                case 3:
+                    await _nomeFantasiaRef.FocusAsync();
+                    break;
+                case 4:
+                    await _cnpjRef.FocusAsync();
+                    break;
+                case 5:
+                    await _cepRef.FocusAsync();
+                    break;
+                case 6:
+                    await _enderecoRef.FocusAsync();
+                    break;
+                case 7:
+                    await _bairroRef.FocusAsync();
+                    break;
+                case 8:
+                    await _ufRef.FocusAsync();
+                    break;
+                case 9:
+                    await _municipioRef.FocusAsync();
+                    break;
+                case 10:
+                    await _complementoRef.FocusAsync();
+                    break;
+                case 11:
+                    await _telefoneRef.FocusAsync();
+                    break;
+                case 12:
+                    await _whatsappRef.FocusAsync();
+                    break;
+                case 13:
+                    await _emailRef.FocusAsync();
+                    break;
+                case 14:
+                    await _siteRef.FocusAsync();
+                    break;
+                case 15:
+                    await _inscricaoEstadualRef.FocusAsync();
+                    break;
+                case 16:
+                    await _inscricaoMunicipalRef.FocusAsync();
+                    break;
+            }
+        }
+        catch
+        {
+            // se der erro de foco, só ignorar
+        }
+    }
+
+    private int? GetFirstInvalidFieldIndexStep1()
+    {
+        // 0 - TipoPessoa (obrigatório)
+        if (string.IsNullOrWhiteSpace(TipoPessoa))
+            return 0;
+
+        // 1 - NaturezaJuridica (obrigatória se PJ)
+        if (TipoPessoa == "PJ" && string.IsNullOrWhiteSpace(NaturezaJuridica))
+            return 1;
+
+        // 2 - RazaoSocial (obrigatória, max 60)
+        var razao = (RazaoSocial).Trim();
+        if (string.IsNullOrWhiteSpace(razao) || razao.Length > 60)
+            return 2;
+
+        // 3 - NomeFantasia (opcional, mas se > 25 está inválido)
+        var fantasia = (NomeFantasia).Trim();
+        if (fantasia.Length > 25)
+            return 3;
+
+        // 4 - CNPJ (obrigatório PJ + dígito verificador)
+        if (TipoPessoa == "PJ")
+        {
+            if (string.IsNullOrWhiteSpace(Cnpj) || !Validators.ValidarCnpj(Cnpj))
+                return 4;
+        }
+
+        // 5 - CEP (obrigatório)
+        if (string.IsNullOrWhiteSpace(Cep))
+            return 5;
+
+        // 6 - Endereço (obrigatório)
+        if (string.IsNullOrWhiteSpace(Endereco))
+            return 6;
+
+        // 7 - Bairro (obrigatório)
+        if (string.IsNullOrWhiteSpace(Bairro))
+            return 7;
+
+        // 8 - UF (obrigatório)
+        if (string.IsNullOrWhiteSpace(Uf))
+            return 8;
+
+        // 9 - Município (obrigatório)
+        if (string.IsNullOrWhiteSpace(Municipio))
+            return 9;
+
+        // 11 - Telefone (obrigatório e válido)
+        var telefoneDigits = new string((Telefone).Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(telefoneDigits) || !Validators.IsValidPhone(telefoneDigits))
+            return 11;
+
+        // 12 - WhatsApp (opcional, mas se tiver precisa ser válido)
+        var whatsappDigits = new string((Whatsapp).Where(char.IsDigit).ToArray());
+        if (!string.IsNullOrWhiteSpace(whatsappDigits) && !Validators.IsValidPhone(whatsappDigits))
+            return 12;
+
+        // 13 - Email (obrigatório e válido)
+        var emailTrim = (Email).Trim();
+        if (string.IsNullOrWhiteSpace(emailTrim) || !Validators.IsValidEmail(emailTrim))
+            return 13;
+
+        // 14 - Site (opcional, mas se tiver precisa ser URL válida)
+        var siteTrim = (Site).Trim();
+        if (!string.IsNullOrWhiteSpace(siteTrim) &&
+            !Uri.TryCreate(
+                siteTrim.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? siteTrim
+                    : $"https://{siteTrim}",
+                UriKind.Absolute,
+                out _))
+        {
+            return 14;
+        }
+
+        // 15 - Inscrição Estadual (opcional, max 20)
+        if (!string.IsNullOrWhiteSpace(InscricaoEstadual) && InscricaoEstadual.Length > 20)
+            return 15;
+
+        // 16 - Inscrição Municipal (opcional, max 20)
+        if (!string.IsNullOrWhiteSpace(InscricaoMunicipal) && InscricaoMunicipal.Length > 20)
+            return 16;
+
+        return null;
+    }
+
+    private async Task OnFieldFocusAsync(int index)
+    {
+        if (_currentStep != 1)
+            return;
+
+        var firstInvalid = GetFirstInvalidFieldIndexStep1();
+        if (firstInvalid.HasValue && firstInvalid.Value < index)
+        {
+            GlobalError = "Preencha os campos obrigatórios na ordem antes de avançar.";
+            await FocusFieldAsync(firstInvalid.Value);
+            StateHasChanged();
+        }
+        else
+        {
+            GlobalError = null;
+        }
+    }
+
+    private bool CanLeaveField(int index)
+    {
+        GlobalError = null;
+
+        switch (index)
+        {
+            case 0: // TipoPessoa
+                if (string.IsNullOrWhiteSpace(TipoPessoa))
+                {
+                    TipoPessoaError = "Campo obrigatório.";
+                    GlobalError = "Selecione o tipo de pessoa antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 1: // NaturezaJuridica
+                if (TipoPessoa == "PJ" && string.IsNullOrWhiteSpace(NaturezaJuridica))
+                {
+                    NaturezaJuridicaError = "Selecione a natureza jurídica.";
+                    GlobalError = "Selecione a natureza jurídica antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 2: // RazaoSocial
+                var razao = (RazaoSocial).Trim();
+                if (string.IsNullOrWhiteSpace(razao))
+                {
+                    RazaoSocialError = "Campo obrigatório.";
+                    GlobalError = "Informe a razão social antes de continuar.";
+                    return false;
+                }
+
+                if (razao.Length > 60)
+                {
+                    RazaoSocialError = "Máximo de 60 caracteres.";
+                    GlobalError = "A razão social excede o tamanho máximo.";
+                    return false;
+                }
+
+                break;
+
+            case 3: // NomeFantasia (somente valida tamanho)
+                var fantasia = (NomeFantasia).Trim();
+                if (fantasia.Length > 25)
+                {
+                    NomeFantasiaError = "Máximo de 25 caracteres.";
+                    GlobalError = "O nome fantasia excede o tamanho máximo.";
+                    return false;
+                }
+
+                break;
+
+            case 4: // CNPJ
+                if (TipoPessoa == "PJ")
+                {
+                    if (string.IsNullOrWhiteSpace(Cnpj))
+                    {
+                        CnpjError = "Campo obrigatório.";
+                        GlobalError = "Informe o CNPJ antes de continuar.";
+                        return false;
+                    }
+
+                    if (!Validators.ValidarCnpj(Cnpj))
+                    {
+                        CnpjError = "CNPJ inválido.";
+                        GlobalError = "Corrija o CNPJ antes de continuar.";
+                        return false;
+                    }
+                }
+
+                break;
+
+            case 5: // CEP
+                if (string.IsNullOrWhiteSpace(Cep))
+                {
+                    CepError = "Campo obrigatório.";
+                    GlobalError = "Informe o CEP antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 6: // Endereco
+                if (string.IsNullOrWhiteSpace(Endereco))
+                {
+                    EnderecoError = "Campo obrigatório.";
+                    GlobalError = "Informe o endereço antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 7: // Bairro
+                if (string.IsNullOrWhiteSpace(Bairro))
+                {
+                    BairroError = "Campo obrigatório.";
+                    GlobalError = "Informe o bairro antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 8: // Uf
+                if (string.IsNullOrWhiteSpace(Uf))
+                {
+                    UfError = "Campo obrigatório.";
+                    GlobalError = "Selecione o UF antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 9: // Municipio
+                if (string.IsNullOrWhiteSpace(Municipio))
+                {
+                    MunicipioError = "Campo obrigatório.";
+                    GlobalError = "Selecione o município antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 11: // Telefone
+                var telDigits = new string((Telefone).Where(char.IsDigit).ToArray());
+                if (string.IsNullOrWhiteSpace(telDigits))
+                {
+                    TelefoneError = "Campo obrigatório.";
+                    GlobalError = "Informe o telefone antes de continuar.";
+                    return false;
+                }
+
+                if (!Validators.IsValidPhone(telDigits))
+                {
+                    TelefoneError = "Telefone inválido. Use (00) 0000-0000 ou (00) 00000-0000.";
+                    GlobalError = "Corrija o telefone antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 12: // WhatsApp (se informado)
+                var whatsDigits = new string((Whatsapp).Where(char.IsDigit).ToArray());
+                if (!string.IsNullOrWhiteSpace(whatsDigits) && !Validators.IsValidPhone(whatsDigits))
+                {
+                    WhatsappError = "WhatsApp inválido. Use (00) 0000-0000 ou (00) 00000-0000.";
+                    GlobalError = "Corrija o WhatsApp antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 13: // Email
+                var emailTrim = (Email).Trim();
+                if (string.IsNullOrWhiteSpace(emailTrim))
+                {
+                    EmailError = "Campo obrigatório.";
+                    GlobalError = "Informe o e-mail antes de continuar.";
+                    return false;
+                }
+
+                if (!Validators.IsValidEmail(emailTrim))
+                {
+                    EmailError = "E-mail inválido.";
+                    GlobalError = "Corrija o e-mail antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 14: // Site (opcional, valida se tiver)
+                var siteTrim = (Site).Trim();
+                if (!string.IsNullOrWhiteSpace(siteTrim) &&
+                    !Uri.TryCreate(
+                        siteTrim.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                            ? siteTrim
+                            : $"https://{siteTrim}",
+                        UriKind.Absolute,
+                        out _))
+                {
+                    SiteError = "Informe uma URL válida (ex: www.seusite.com.br).";
+                    GlobalError = "Corrija o site antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 15: // IE
+                if (!string.IsNullOrWhiteSpace(InscricaoEstadual) && InscricaoEstadual.Length > 20)
+                {
+                    InscricaoEstadualError = "Máximo de 20 caracteres.";
+                    GlobalError = "Corrija a inscrição estadual antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 16: // IM
+                if (!string.IsNullOrWhiteSpace(InscricaoMunicipal) && InscricaoMunicipal.Length > 20)
+                {
+                    InscricaoMunicipalError = "Máximo de 20 caracteres.";
+                    GlobalError = "Corrija a inscrição municipal antes de continuar.";
+                    return false;
+                }
+
+                break;
+        }
+
+        return true;
+    }
+
+    private async Task OnFieldKeyDownAsync(int index, KeyboardEventArgs e)
+    {
+        if (_currentStep != 1)
+            return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+            case "Enter":
+                if (!CanLeaveField(index))
+                    return;
+
+                var next = Math.Min(LastFieldIndexStep1, index + 1);
+                await FocusFieldAsync(next);
+                break;
+
+            case "ArrowUp":
+                var prev = Math.Max(FirstFieldIndexStep1, index - 1);
+                await FocusFieldAsync(prev);
+                break;
+
+            case "Home":
+                await FocusFieldAsync(FirstFieldIndexStep1);
+                break;
+
+            case "End":
+                await FocusFieldAsync(LastFieldIndexStep1);
+                break;
+        }
+    }
+
+}

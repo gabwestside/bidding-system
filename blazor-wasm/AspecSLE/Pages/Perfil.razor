@@ -1,0 +1,190 @@
+@page "/perfil"
+
+@using AspecSLE.Services
+@using AspecSLE.Models
+@using AspecSLE.Utils
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Aspec Licita - Meu Perfil</PageTitle>
+
+<div class="min-h-[calc(80vh-72px)] flex items-center justify-center">
+    <div class="w-full max-w-2xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">Meu Perfil</span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Informações do perfil
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Visualize e gerencie as informações da sua conta.
+                </p>
+            </div>
+
+            @if (_loading)
+            {
+                <!-- Loading State -->
+                <div class="px-4 py-12 flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(_error))
+            {
+                <!-- Error State -->
+                <div class="px-4 py-4">
+                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <div class="font-semibold mb-0.5">Erro ao carregar perfil</div>
+                        <div class="mb-2">@_error</div>
+                        <button @onclick="LoadProfileAsync"
+                                class="mt-1 px-3 py-1.5 bg-red-600 text-white text-[11px] rounded-md hover:bg-red-700">
+                            Tentar novamente
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (_profile != null)
+            {
+                <!-- Profile Header -->
+                <div class="px-4 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-border-soft">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center text-lg font-bold">
+                            @Validators.GetInitials(_profile.FullName)
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-900">@_profile.FullName</h2>
+                            <p class="text-[11px] text-slate-600">@_profile.Email</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Content -->
+                <div class="px-4 pt-2 pb-3 space-y-4">
+                    <div class="space-y-3">
+                        <!-- Nome Completo -->
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700">
+                                Nome completo
+                            </label>
+                            <div
+                                class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                <span class="text-sm text-slate-900">@_profile.FullName</span>
+                            </div>
+                        </div>
+
+                        <!-- Nome e Sobrenome -->
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700">
+                                    Nome
+                                </label>
+                                <div
+                                    class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                    <span class="text-sm text-slate-900">@_profile.FirstName</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700">
+                                    Sobrenome
+                                </label>
+                                <div
+                                    class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                    <span class="text-sm text-slate-900">@_profile.LastName</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- E-mail e Telefone -->
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700">
+                                    E-mail
+                                </label>
+                                <div
+                                    class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                    <span class="text-sm text-slate-900">@_profile.Email</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700">
+                                    Telefone
+                                </label>
+                                <div
+                                    class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                    <span class="text-sm text-slate-900">@Validators.FormatPhone(_profile.Phone)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Membro desde -->
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700">
+                                Membro desde
+                            </label>
+                            <div
+                                class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 flex items-center">
+                                <span
+                                    class="text-sm text-slate-900">@_profile.CreatedAt.ToString("dd/MM/yyyy 'às' HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="px-4 pt-1 pb-3 border-t border-border-soft">
+                    <div class="w-full text-center text-[11px] text-slate-600">
+                        Precisa atualizar suas informações?
+                        <a href="/perfil/editar" class="ml-1 text-primary font-medium hover:text-primary-strong">
+                            Editar perfil
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private AuthUser? _profile;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/entrar");
+            return;
+        }
+
+        await LoadProfileAsync();
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        var (ok, user, error) = await Auth.GetUserProfileAsync();
+
+        if (ok && user != null)
+        {
+            _profile = user;
+        }
+        else
+        {
+            _error = error ?? "Erro desconhecido ao carregar perfil.";
+        }
+
+        _loading = false;
+        StateHasChanged();
+    }
+
+}

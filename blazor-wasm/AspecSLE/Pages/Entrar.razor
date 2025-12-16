@@ -1,9 +1,16 @@
 @page "/entrar"
-@inject IJSRuntime JS
 
-<PageTitle>Entrar</PageTitle>
+@using AspecSLE.Services
+@using AspecSLE.Utils
 
-<div class="min-h-[calc(100vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
+@inject IJSRuntime Js
+@inject IConfiguration Configuration
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Aspec Licita - Entrar</PageTitle>
+
+<div class="min-h-[calc(90vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
     <div class="w-full max-w-md">
         <div class="text-[11px] text-slate-500 mb-2">
             <span class="text-primary font-medium">Entrar</span>
@@ -33,7 +40,7 @@
                            placeholder="CPF do usuário"
                            class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                            @bind="Cpf"
-                           @bind:event="oninput" />
+                           @bind:event="oninput"/>
                     @if (!string.IsNullOrEmpty(CpfError))
                     {
                         <p class="text-[11px] text-red-500 mt-0.5">@CpfError</p>
@@ -51,13 +58,13 @@
                            placeholder="Senha do usuário"
                            class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                            @bind="Password"
-                           @bind:event="oninput" />
+                           @bind:event="oninput"/>
 
                     <div class="flex items-center justify-between mt-1">
                         <label class="inline-flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer">
                             <input type="checkbox"
                                    class="h-3.5 w-3.5 rounded border border-border-soft"
-                                   @bind="ShowPassword" />
+                                   @bind="ShowPassword"/>
                             <span>Mostrar senha</span>
                         </label>
 
@@ -80,7 +87,6 @@
                     }
                 </div>
 
-                <!-- reCAPTCHA -->
                 <div class="space-y-1.5">
                     <label class="text-[11px] text-slate-700">
                         Não sou um robô
@@ -99,9 +105,24 @@
                 <button type="button"
                         @onclick="OnSubmitAsync"
                         disabled="@IsSubmitDisabled"
-                        class="h-9 w-full rounded-full bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed">
-                    Entrar
+                        class="h-9 w-full rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                    @if (IsSubmitting)
+                    {
+                        <svg class="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+                             viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <span>Entrando...</span>
+                    }
+                    else
+                    {
+                        <span>Entrar</span>
+                    }
                 </button>
+
 
                 <div class="h-px w-full bg-border-soft/70"></div>
 
@@ -109,7 +130,7 @@
                     Ainda não tem cadastro?
                     <NavLink href="/cadastro"
                              class="ml-1 text-primary font-medium hover:text-primary-strong">
-                        Crie sua conta de fornecedor
+                        Crie sua conta
                     </NavLink>
                 </div>
             </div>
@@ -118,20 +139,21 @@
 </div>
 
 @code {
-    // ===== Campos básicos =====
     private string _cpf = string.Empty;
+
     private string Cpf
     {
         get => _cpf;
         set
         {
-            _cpf = FormatCpfMask(value);
+            _cpf = Validators.FormatCpfMask(value);
             if (!string.IsNullOrEmpty(CpfError))
                 CpfError = null;
         }
     }
 
     private string _password = string.Empty;
+
     private string Password
     {
         get => _password;
@@ -153,85 +175,100 @@
     private const int MaxAttempts = 3;
     private bool IsBlocked { get; set; }
 
-    private string PasswordInputType => ShowPassword ? "text" : "password";
-
-    // reCAPTCHA
     private string? RecaptchaToken { get; set; }
 
-    // desabilita só quando bloqueado (o reCAPTCHA em si impede o envio)
-    private bool IsSubmitDisabled => IsBlocked;
+    private bool IsSubmitting { get; set; }
 
-    // coloque sua SITE KEY aqui ou leia de config
-    private const string RecaptchaSiteKey = "6LdRVBQsAAAAAEddgpn2_Cnjt_O_gtcWth2xoY8N";
+    private string PasswordInputType => ShowPassword ? "text" : "password";
+
+    private bool IsSubmitDisabled => IsBlocked || IsSubmitting;
+
+    private string? RecaptchaSiteKey => Configuration["RecaptchaSettings:SiteKey"];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // inicializa o widget reCAPTCHA
-            await JS.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            await Js.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
         }
     }
 
     private async Task OnSubmitAsync()
     {
-        if (IsBlocked)
+        if (IsBlocked || IsSubmitting)
             return;
 
-        var isValidFields = ValidateFormWithoutCaptcha();
-        if (!isValidFields)
-            return;
+        IsSubmitting = true;
+        StateHasChanged();
 
-        // pega o token do reCAPTCHA
-        RecaptchaToken = await JS.InvokeAsync<string>("recaptchaInterop.getResponse");
-
-        if (string.IsNullOrWhiteSpace(RecaptchaToken))
+        try
         {
-            CaptchaError = "Confirme que você não é um robô!";
-            return;
+            var isValid = ValidateFormWithoutCaptcha();
+
+            if (!isValid)
+            {
+                IsSubmitting = false;
+                return;
+            }
+
+            RecaptchaToken = await Js.InvokeAsync<string>("recaptchaInterop.getResponse");
+
+            if (string.IsNullOrWhiteSpace(RecaptchaToken))
+            {
+                CaptchaError = "Confirme que você não é um robô!";
+                IsSubmitting = false;
+                return;
+            }
+
+            CaptchaError = null;
+
+            var cpfDigits = new string(Cpf.Where(char.IsDigit).ToArray());
+
+            var (ok, error) = await Auth.LoginAsync(cpfDigits, Password, RecaptchaToken);
+
+            if (!ok)
+            {
+                PasswordError = error ?? "Erro ao autenticar.";
+
+                Attempts++;
+
+                if (Attempts >= MaxAttempts)
+                {
+                    IsBlocked = true;
+                    PasswordError = "Você excedeu o limite de tentativas. Sua conta está bloqueada!.";
+                }
+
+                await Js.InvokeVoidAsync("recaptchaInterop.reset");
+                return;
+            }
+
+            Nav.NavigateTo("/");
         }
-
-        CaptchaError = null;
-
-        // >>> AQUI você chama o backend passando cpf, senha e RecaptchaToken <<<
-        // var result = await AuthService.LoginAsync(cpfDigits, Password, RecaptchaToken);
-        // Se backend disser que o captcha falhou => CaptchaError = "Confirme que você não é um robô!";
-
-        // Por enquanto vamos simular falha de senha para demonstrar limite de tentativas
-        Attempts++;
-
-        if (Attempts >= MaxAttempts)
+        finally
         {
-            IsBlocked = true;
-            PasswordError = "Você excedeu o limite de tentativas. Sua conta está bloqueada!.";
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            IsSubmitting = false;
         }
-        else
-        {
-            PasswordError = "Senha inválida";
-        }
-
-        // opcional: resetar o reCAPTCHA a cada tentativa
-        await JS.InvokeVoidAsync("recaptchaInterop.reset");
     }
 
     private bool ValidateFormWithoutCaptcha()
     {
         var valid = true;
 
-        // CPF
-        var cpfDigits = new string(Cpf.Where(char.IsDigit).ToArray());
+        var cpfDigits = Validators.GetDigitsOnly(Cpf);
+
         if (string.IsNullOrWhiteSpace(cpfDigits))
         {
             CpfError = "Campo obrigatório";
             valid = false;
         }
-        else if (cpfDigits.Length != 11 || !IsValidCpf(cpfDigits))
+        else if (cpfDigits.Length != 11 || !Validators.IsValidCpf(cpfDigits))
         {
             CpfError = "CPF inválido";
             valid = false;
         }
 
-        // Senha
         if (string.IsNullOrWhiteSpace(Password))
         {
             PasswordError = "Campo obrigatório";
@@ -244,47 +281,5 @@
         }
 
         return valid;
-    }
-
-    private static bool IsValidCpf(string cpfDigits)
-    {
-        if (string.IsNullOrWhiteSpace(cpfDigits) || cpfDigits.Length != 11 || !cpfDigits.All(char.IsDigit))
-            return false;
-
-        if (cpfDigits.Distinct().Count() == 1)
-            return false;
-
-        var nums = cpfDigits.Select(c => c - '0').ToArray();
-
-        var sum1 = 0;
-        for (var i = 0; i < 9; i++)
-            sum1 += nums[i] * (10 - i);
-        var dv1 = (sum1 * 10) % 11;
-        if (dv1 == 10) dv1 = 0;
-        if (dv1 != nums[9]) return false;
-
-        var sum2 = 0;
-        for (var i = 0; i < 10; i++)
-            sum2 += nums[i] * (11 - i);
-        var dv2 = (sum2 * 10) % 11;
-        if (dv2 == 10) dv2 = 0;
-
-        return dv2 == nums[10];
-    }
-
-    private static string FormatCpfMask(string value)
-    {
-        var digits = new string(value.Where(char.IsDigit).Take(11).ToArray());
-
-        if (digits.Length <= 3)
-            return digits;
-
-        if (digits.Length <= 6)
-            return $"{digits[..3]}.{digits[3..]}";
-
-        if (digits.Length <= 9)
-            return $"{digits[..3]}.{digits[3..6]}.{digits[6..]}";
-
-        return $"{digits[..3]}.{digits[3..6]}.{digits[6..9]}-{digits[9..]}";
     }
 }

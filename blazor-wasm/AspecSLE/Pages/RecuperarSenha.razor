@@ -1,0 +1,296 @@
+@page "/recuperar-senha"
+
+@using AspecSLE.Services
+@using AspecSLE.Utils
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime Js
+@inject IConfiguration Configuration
+
+<PageTitle>Aspec Licita - Recuperar Senha</PageTitle>
+
+<div class="min-h-[calc(90vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
+    <div class="w-full max-w-md">
+        <div class="text-[11px] text-slate-500 mb-2">
+            <span class="text-primary font-medium">Recuperar Senha</span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <!-- Cabeçalho -->
+            <div class="px-5 pt-4 pb-3 text-center">
+                <h1 class="text-lg font-semibold tracking-tight text-slate-900">
+                    Recuperar sua senha
+                </h1>
+                <p class="text-[11px] text-slate-500">
+                    Informe seu email e CPF para receber instruções de redefinição.
+                </p>
+            </div>
+
+            @if (!IsSuccess)
+            {
+                <div class="px-5 pb-4 space-y-4">
+                    <!-- Email -->
+                    <div class="space-y-1.5">
+                        <label for="email" class="text-xs text-slate-700">
+                            Email
+                        </label>
+                        <input id="email"
+                               type="email"
+                               autocomplete="email"
+                               placeholder="seu@email.com"
+                               class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                               @bind="Email"
+                               @bind:event="oninput"/>
+                        @if (!string.IsNullOrEmpty(EmailError))
+                        {
+                            <p class="text-[11px] text-red-500 mt-0.5">@EmailError</p>
+                        }
+                    </div>
+
+                    <!-- CPF -->
+                    <div class="space-y-1.5">
+                        <label for="cpf" class="text-xs text-slate-700">
+                            CPF <span class="font-normal">(somente números)</span>
+                        </label>
+                        <input id="cpf"
+                               type="text"
+                               inputmode="numeric"
+                               autocomplete="off"
+                               placeholder="CPF do usuário"
+                               class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                               @bind="Cpf"
+                               @bind:event="oninput"/>
+                        @if (!string.IsNullOrEmpty(CpfError))
+                        {
+                            <p class="text-[11px] text-red-500 mt-0.5">@CpfError</p>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(GeneralError))
+                    {
+                        <div class="rounded-md bg-red-50 border border-red-200 p-3">
+                            <p class="text-[11px] text-red-600">@GeneralError</p>
+                        </div>
+                    }
+                </div>
+
+                <div class="px-5 pb-4 pt-2 flex flex-col gap-3">
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] text-slate-700">
+                            Não sou um robô
+                        </label>
+
+                        <div id="recaptcha-container" class="mt-1"></div>
+
+                        @if (!string.IsNullOrEmpty(CaptchaError))
+                        {
+                            <p class="text-[11px] text-red-500 mt-0.5">@CaptchaError</p>
+                        }
+                    </div>
+
+                    <button type="button"
+                            @onclick="OnSubmitAsync"
+                            disabled="@IsSubmitting"
+                            class="h-9 w-full rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                        @if (IsSubmitting)
+                        {
+                            <svg class="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                 fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span>Enviando...</span>
+                        }
+                        else
+                        {
+                            <span>Enviar</span>
+                        }
+                    </button>
+
+                    <div class="h-px w-full bg-border-soft/70"></div>
+
+                    <div class="w-full text-center text-[11px] text-slate-600 pb-1">
+                        Lembrou sua senha?
+                        <NavLink href="/entrar"
+                                 class="ml-1 text-primary font-medium hover:text-primary-strong">
+                            Voltar para o login
+                        </NavLink>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Estado de Sucesso -->
+                <div class="px-5 pb-4">
+                    <div class="flex flex-col items-center justify-center py-8 space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <h2 class="text-base font-semibold text-slate-900">
+                                Email Enviado!
+                            </h2>
+                            <p class="text-sm text-slate-600">
+                                @SuccessMessage
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-border-soft">
+                        <button type="button"
+                                @onclick="GoToLogin"
+                                class="h-9 w-full rounded-md bg-primary text-white text-sm font-medium hover:bg-primary-strong">
+                            Ir para Login
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = string.Empty;
+
+    private string Email
+    {
+        get => _email;
+        set
+        {
+            _email = value;
+            if (!string.IsNullOrEmpty(EmailError))
+                EmailError = null;
+            if (!string.IsNullOrEmpty(GeneralError))
+                GeneralError = null;
+        }
+    }
+
+    private string _cpf = string.Empty;
+
+    private string Cpf
+    {
+        get => _cpf;
+        set
+        {
+            _cpf = Validators.FormatCpfMask(value);
+            if (!string.IsNullOrEmpty(CpfError))
+                CpfError = null;
+            if (!string.IsNullOrEmpty(GeneralError))
+                GeneralError = null;
+        }
+    }
+
+    private string? EmailError { get; set; }
+    private string? CpfError { get; set; }
+    private string? GeneralError { get; set; }
+    private string? CaptchaError { get; set; }
+    private string? RecaptchaToken { get; set; }
+
+    private string? RecaptchaSiteKey => Configuration["RecaptchaSettings:SiteKey"];
+
+    private bool IsSubmitting { get; set; }
+    private bool IsSuccess { get; set; }
+    private string SuccessMessage { get; set; } = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            await Js.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
+        }
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        if (IsSubmitting)
+            return;
+
+        IsSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var isValid = ValidateForm();
+
+            if (!isValid)
+            {
+                IsSubmitting = false;
+                return;
+            }
+
+            RecaptchaToken = await Js.InvokeAsync<string>("recaptchaInterop.getResponse");
+
+            if (string.IsNullOrWhiteSpace(RecaptchaToken))
+            {
+                CaptchaError = "Confirme que você não é um robô!";
+                IsSubmitting = false;
+                return;
+            }
+
+            CaptchaError = null;
+
+            var cpfDigits = Validators.GetDigitsOnly(Cpf);
+            var (ok, message) = await Auth.ForgotPasswordAsync(Email.Trim(), cpfDigits, RecaptchaToken);
+
+            if (!ok)
+            {
+                GeneralError = message ?? "Erro ao solicitar redefinição de senha.";
+                await Js.InvokeVoidAsync("recaptchaInterop.reset");
+                return;
+            }
+
+            IsSuccess = true;
+            SuccessMessage = message ?? "Se o email existir, você receberá instruções para redefinir sua senha.";
+        }
+        finally
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            IsSubmitting = false;
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        var valid = true;
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            EmailError = "Campo obrigatório";
+            valid = false;
+        }
+        else if (!Validators.IsValidEmail(Email))
+        {
+            EmailError = "Email inválido";
+            valid = false;
+        }
+
+        var cpfDigits = Validators.GetDigitsOnly(Cpf);
+
+        if (string.IsNullOrWhiteSpace(cpfDigits))
+        {
+            CpfError = "Campo obrigatório";
+            valid = false;
+        }
+        else if (cpfDigits.Length != 11 || !Validators.IsValidCpf(cpfDigits))
+        {
+            CpfError = "CPF inválido";
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    private void GoToLogin()
+    {
+        Nav.NavigateTo("/entrar");
+    }
+
+}

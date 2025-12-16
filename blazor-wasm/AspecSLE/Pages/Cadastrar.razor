@@ -1,0 +1,562 @@
+@page "/cadastro"
+
+@using AspecSLE.Services
+@using AspecSLE.Utils
+
+@inject AuthService Auth
+@inject IJSRuntime Js
+@inject IConfiguration Configuration
+
+<PageTitle>Aspec Licita - Cadastrar usuário</PageTitle>
+
+<div class="min-h-[calc(80vh-72px)] flex items-center justify-center">
+    <div class="w-full max-w-2xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">Cadastro</span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Cadastro de usuário
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Crie seu acesso para acompanhar e participar dos processos de licitação.
+                </p>
+            </div>
+
+            <div class="px-4 pt-2 pb-3 space-y-4">
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="nome">
+                            Nome completo do usuário
+                        </label>
+                        <input id="nome"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                               placeholder="Informe o nome do usuário"
+                               value="@Nome"
+                               @oninput="OnNomeChanged"/>
+                        @if (!string.IsNullOrEmpty(NomeError))
+                        {
+                            <p class="text-[10px] text-red-500 mt-0.5">@NomeError</p>
+                        }
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700" for="cpf">
+                                CPF do usuário
+                            </label>
+                            <input id="cpf"
+                                   class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                   placeholder="Informe o seu CPF"
+                                   value="@Cpf"
+                                   @oninput="OnCpfChanged"
+                                   inputmode="numeric"/>
+                            @if (!string.IsNullOrEmpty(CpfError))
+                            {
+                                <p class="text-[10px] text-red-500 mt-0.5">@CpfError</p>
+                            }
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700" for="telefone">
+                                Telefone
+                            </label>
+                            <input id="telefone"
+                                   class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                   placeholder="(00) 00000-0000"
+                                   value="@Telefone"
+                                   @oninput="OnTelefoneChanged"
+                                   inputmode="numeric"
+                                   maxlength="15"/>
+                            @if (!string.IsNullOrEmpty(TelefoneError))
+                            {
+                                <p class="text-[10px] text-red-500 mt-0.5">@TelefoneError</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="perfil">
+                            Perfil
+                        </label>
+                        <select id="perfil"
+                                class="h-9 w-full rounded-md border border-border-soft bg-slate-50 px-3 text-xs text-slate-600 focus:outline-none cursor-not-allowed"
+                                disabled>
+                            <option>Administrador</option>
+                            <option>Operador</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-0.5">
+                            Neste momento o cadastro é sempre
+                            <span class="font-medium"> Administrador</span>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700" for="email">
+                                E-mail
+                            </label>
+                            <input id="email"
+                                   class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                   placeholder="Informe o seu e-mail"
+                                   value="@Email"
+                                   @oninput="OnEmailChanged"
+                                   type="email"/>
+                            @if (!string.IsNullOrEmpty(EmailError))
+                            {
+                                <p class="text-[10px] text-red-500 mt-0.5">@EmailError</p>
+                            }
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs text-slate-700" for="confirmEmail">
+                                Confirmação de e-mail
+                            </label>
+                            <input id="confirmEmail"
+                                   class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                   placeholder="Confirme o e-mail informado"
+                                   value="@ConfirmEmail"
+                                   @oninput="OnConfirmEmailChanged"
+                                   type="email"/>
+                            @if (!string.IsNullOrEmpty(ConfirmEmailError))
+                            {
+                                <p class="text-[10px] text-red-500 mt-0.5">@ConfirmEmailError</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-[1.1fr,0.9fr] gap-3">
+                        <div class="space-y-3">
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="password">
+                                    Senha
+                                </label>
+                                <input id="password"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Informe uma senha"
+                                       type="@PasswordInputType"
+                                       value="@Password"
+                                       @oninput="OnPasswordChanged"/>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <input id="showPassword"
+                                           type="checkbox"
+                                           class="h-3 w-3 rounded border border-border-soft"
+                                           checked="@ShowPassword"
+                                           @onchange="ToggleShowPassword"/>
+                                    <label for="showPassword"
+                                           class="text-[10px] text-slate-600 cursor-pointer">
+                                        Mostrar senha
+                                    </label>
+                                </div>
+                                @if (!string.IsNullOrEmpty(PasswordError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@PasswordError</p>
+                                }
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-slate-700" for="confirmPassword">
+                                    Confirmação de senha
+                                </label>
+                                <input id="confirmPassword"
+                                       class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                       placeholder="Confirme a senha informada"
+                                       type="@ConfirmPasswordInputType"
+                                       value="@ConfirmPassword"
+                                       @oninput="OnConfirmPasswordChanged"/>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <input id="showConfirmPassword"
+                                           type="checkbox"
+                                           class="h-3 w-3 rounded border border-border-soft"
+                                           checked="@ShowConfirmPassword"
+                                           @onchange="ToggleShowConfirmPassword"/>
+                                    <label for="showConfirmPassword"
+                                           class="text-[10px] text-slate-600 cursor-pointer">
+                                        Mostrar confirmação
+                                    </label>
+                                </div>
+                                @if (!string.IsNullOrEmpty(ConfirmPasswordError))
+                                {
+                                    <p class="text-[10px] text-red-500 mt-0.5">@ConfirmPasswordError</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="rounded-md border border-border-soft bg-card-muted px-2.5 py-2.5">
+                            <div class="text-[10px] text-slate-700 mb-1 font-medium">
+                                Regras para criação de senha
+                            </div>
+                            <ul class="space-y-0.5 mt-1">
+                                <li class="@GetRuleClass(HasMinLength)">
+                                    @GetRuleIcon(HasMinLength)
+                                    8 a 16 caracteres
+                                </li>
+                                <li class="@GetRuleClass(HasNumber)">
+                                    @GetRuleIcon(HasNumber)
+                                    Ao menos 1 número
+                                </li>
+                                <li class="@GetRuleClass(HasLower)">
+                                    @GetRuleIcon(HasLower)
+                                    Ao menos 1 letra minúscula
+                                </li>
+                                <li class="@GetRuleClass(HasUpper)">
+                                    @GetRuleIcon(HasUpper)
+                                    Ao menos 1 letra maiúscula
+                                </li>
+                                <li class="@GetRuleClass(HasSpecial)">
+                                    @GetRuleIcon(HasSpecial)
+                                    Ao menos 1 caractere especial (! @@ # $ % & *)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(GlobalError))
+                {
+                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        <div class="font-semibold mb-0.5">Erro</div>
+                        <div>@GlobalError</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(SuccessMessage))
+                {
+                    <div class="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                        <div class="font-semibold mb-0.5">
+                            Cadastro realizado com sucesso
+                        </div>
+                        <div>@SuccessMessage</div>
+                    </div>
+                }
+            </div>
+
+            <div class="px-4 pt-1 pb-3 flex flex-col gap-2.5">
+                <div class="space-y-1.5">
+                    <label class="text-[11px] text-slate-700">
+                        Não sou um robô
+                    </label>
+
+                    <div id="recaptcha-container" class="mt-1"></div>
+
+                    @if (!string.IsNullOrEmpty(CaptchaError))
+                    {
+                        <p class="text-[11px] text-red-500 mt-0.5">@CaptchaError</p>
+                    }
+                </div>
+
+                <button type="button"
+                        @onclick="OnSubmitAsync"
+                        disabled="@IsSubmitting"
+                        class="h-9 w-full rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                    @if (IsSubmitting)
+                    {
+                        <span
+                            class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                        <span>Confirmando cadastro...</span>
+                    }
+                    else
+                    {
+                        <span>Confirmar cadastro</span>
+                    }
+                </button>
+
+                <div class="w-full text-center text-[11px] text-slate-600">
+                    Já possui cadastro?
+                    <a href="/entrar" class="ml-1 text-primary font-medium hover:text-primary-strong">
+                        Acesse sua conta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    #region Campos do formulario
+
+    private string Nome { get; set; } = string.Empty;
+    private string Cpf { get; set; } = string.Empty;
+    private string Telefone { get; set; } = string.Empty;
+    private string Email { get; set; } = string.Empty;
+    private string ConfirmEmail { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ConfirmPassword { get; set; } = string.Empty;
+
+    private bool ShowPassword { get; set; }
+    private bool ShowConfirmPassword { get; set; }
+
+    private string? NomeError { get; set; }
+    private string? CpfError { get; set; }
+    private string? TelefoneError { get; set; }
+    private string? EmailError { get; set; }
+    private string? ConfirmEmailError { get; set; }
+    private string? PasswordError { get; set; }
+    private string? ConfirmPasswordError { get; set; }
+    private string? GlobalError { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? CaptchaError { get; set; }
+    private string? RecaptchaToken { get; set; }
+
+    private string? RecaptchaSiteKey => Configuration["RecaptchaSettings:SiteKey"];
+
+    private bool IsSubmitting { get; set; }
+
+    private string PasswordInputType => ShowPassword ? "text" : "password";
+    private string ConfirmPasswordInputType => ShowConfirmPassword ? "text" : "password";
+
+    private bool HasMinLength => Password.Length >= 8 && Password.Length <= 16;
+    private bool HasUpper => Password.Any(char.IsUpper);
+    private bool HasLower => Password.Any(char.IsLower);
+    private bool HasNumber => Password.Any(char.IsDigit);
+    private bool HasSpecial => Password.Any(c => "!@#$%&*".Contains(c));
+
+    #endregion
+
+    private static RenderFragment GetRuleIcon(bool ok) => builder =>
+    {
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", ok
+            ? "mr-1.5 text-[11px] text-emerald-600"
+            : "mr-1.5 text-[11px] text-slate-300");
+        builder.AddContent(2, ok ? "✓" : "•");
+        builder.CloseElement();
+    };
+
+    private static string GetRuleClass(bool ok) =>
+        ok
+            ? "text-[10px] text-emerald-700 flex items-center"
+            : "text-[10px] text-slate-500 flex items-center";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            await Js.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
+        }
+    }
+
+    private void OnNomeChanged(ChangeEventArgs e)
+    {
+        Nome = e.Value?.ToString() ?? string.Empty;
+        NomeError = null;
+        GlobalError = null;
+    }
+
+    private void OnCpfChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        Cpf = Validators.FormatCpfMask(value);
+        CpfError = null;
+        GlobalError = null;
+    }
+
+    private void OnTelefoneChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        Telefone = Validators.FormatPhoneMask(value);
+        TelefoneError = null;
+        GlobalError = null;
+    }
+
+    private void OnEmailChanged(ChangeEventArgs e)
+    {
+        Email = e.Value?.ToString() ?? string.Empty;
+        EmailError = null;
+        GlobalError = null;
+    }
+
+    private void OnConfirmEmailChanged(ChangeEventArgs e)
+    {
+        ConfirmEmail = e.Value?.ToString() ?? string.Empty;
+        ConfirmEmailError = null;
+        GlobalError = null;
+    }
+
+    private void OnPasswordChanged(ChangeEventArgs e)
+    {
+        Password = e.Value?.ToString() ?? string.Empty;
+        PasswordError = null;
+        GlobalError = null;
+    }
+
+    private void OnConfirmPasswordChanged(ChangeEventArgs e)
+    {
+        ConfirmPassword = e.Value?.ToString() ?? string.Empty;
+        ConfirmPasswordError = null;
+        GlobalError = null;
+    }
+
+    private void ToggleShowPassword(ChangeEventArgs e)
+        => ShowPassword = (bool)e.Value!;
+
+    private void ToggleShowConfirmPassword(ChangeEventArgs e)
+        => ShowConfirmPassword = (bool)e.Value!;
+
+    private bool Validate(out string cpfDigits)
+    {
+        cpfDigits = new string(Cpf.Where(char.IsDigit).ToArray());
+        var ok = true;
+
+        NomeError = CpfError = TelefoneError = EmailError = ConfirmEmailError =
+            PasswordError = ConfirmPasswordError = GlobalError = null;
+        SuccessMessage = null;
+
+        var nomeTrim = Nome.Trim();
+        if (string.IsNullOrWhiteSpace(nomeTrim))
+        {
+            NomeError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (nomeTrim.Length < 5 || nomeTrim.Length > 60)
+        {
+            NomeError = "O nome deve ter entre 5 e 60 caracteres.";
+            ok = false;
+        }
+        else if (!nomeTrim.All(c => char.IsLetter(c) || char.IsWhiteSpace(c)))
+        {
+            NomeError = "Use apenas letras e espaços.";
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(cpfDigits))
+        {
+            CpfError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (cpfDigits.Length != 11 || !Validators.IsValidCpf(cpfDigits))
+        {
+            CpfError = "CPF inválido";
+            ok = false;
+        }
+
+        var telefoneDigits = new string(Telefone.Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(telefoneDigits))
+        {
+            TelefoneError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (!Validators.IsValidPhone(telefoneDigits))
+        {
+            TelefoneError = "Telefone inválido. Use (00) 0000-0000 ou (00) 00000-0000";
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            EmailError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(Email.Trim(), @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
+        {
+            EmailError = "E-mail inválido.";
+            ok = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ConfirmEmail))
+        {
+            ConfirmEmailError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (!string.Equals(Email.Trim(), ConfirmEmail.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            ConfirmEmailError = "O e-mail de confirmação deve ser igual ao informado.";
+            ok = false;
+        }
+
+        if (string.IsNullOrEmpty(Password))
+        {
+            PasswordError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (Password.Length < 8 || Password.Length > 16)
+        {
+            PasswordError = "A senha deve ter entre 8 e 16 caracteres.";
+            ok = false;
+        }
+        else if (!(HasMinLength && HasUpper && HasLower && HasNumber && HasSpecial))
+        {
+            PasswordError = "A senha não atende a todos os requisitos.";
+            ok = false;
+        }
+
+        if (string.IsNullOrEmpty(ConfirmPassword))
+        {
+            ConfirmPasswordError = "Campo obrigatório";
+            ok = false;
+        }
+        else if (ConfirmPassword != Password)
+        {
+            ConfirmPasswordError = "A confirmação deve ser idêntica à senha.";
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        if (IsSubmitting)
+            return;
+
+        if (!Validate(out var cpfDigits))
+            return;
+
+        IsSubmitting = true;
+
+        RecaptchaToken = await Js.InvokeAsync<string>("recaptchaInterop.getResponse");
+
+        if (string.IsNullOrWhiteSpace(RecaptchaToken))
+        {
+            CaptchaError = "Confirme que você não é um robô!";
+            IsSubmitting = false;
+            return;
+        }
+
+        CaptchaError = null;
+
+        try
+        {
+            var telefoneDigits = new string(Telefone.Where(char.IsDigit).ToArray());
+            var (ok, error, successMsg) = await Auth.RegisterAsync(Nome, cpfDigits, telefoneDigits, Email, Password, ConfirmPassword, RecaptchaToken);
+
+            if (!ok)
+            {
+                GlobalError = error ?? "Falha ao realizar o cadastro.";
+                await Js.InvokeVoidAsync("recaptchaInterop.reset");
+                return;
+            }
+
+            Nome = string.Empty;
+            Cpf = string.Empty;
+            Telefone = string.Empty;
+            Email = string.Empty;
+            ConfirmEmail = string.Empty;
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
+
+            ShowPassword = false;
+            ShowConfirmPassword = false;
+
+            NomeError = CpfError = TelefoneError = EmailError = ConfirmEmailError =
+                PasswordError = ConfirmPasswordError = GlobalError = null;
+
+            StateHasChanged();
+
+            SuccessMessage = successMsg +
+                             " Um link de confirmação foi enviado ao seu e-mail. Para concluir o cadastro, acesse o link de confirmação enviado e insira a senha informada no momento do cadastro.";
+        }
+        finally
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            IsSubmitting = false;
+        }
+    }
+
+}

@@ -1,0 +1,502 @@
+@page "/redefinir-senha"
+
+@using AspecSLE.Services
+
+@inject IJSRuntime Js
+@inject IConfiguration Configuration
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Aspec Licita - Redefinir Senha</PageTitle>
+
+<div class="min-h-[calc(100vh-96px)] flex items-center justify-center px-4 py-8 md:py-12">
+    <div class="w-full max-w-md">
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <!-- Cabeçalho -->
+            <div class="px-5 pt-4 pb-3 text-center">
+                <h1 class="text-lg font-semibold tracking-tight text-slate-900">
+                    Redefinir Senha
+                </h1>
+            </div>
+
+            <div class="px-5 pb-4">
+                @if (IsProcessing)
+                {
+                    <!-- Estado de Carregamento Inicial -->
+                    <div class="flex flex-col items-center justify-center py-8 space-y-4">
+                        <svg class="animate-spin h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none"
+                             viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <p class="text-sm text-slate-600">
+                            Validando link, aguarde...
+                        </p>
+                    </div>
+                }
+                else if (IsSuccess)
+                {
+                    <!-- Estado de Sucesso -->
+                    <div class="flex flex-col items-center justify-center py-8 space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <h2 class="text-base font-semibold text-slate-900">
+                                Senha Redefinida!
+                            </h2>
+                            <p class="text-sm text-slate-600">
+                                @Message
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-border-soft">
+                        <button type="button"
+                                @onclick="GoToLogin"
+                                class="h-9 w-full rounded-md bg-primary text-white text-sm font-medium hover:bg-primary-strong">
+                            Ir para Login
+                        </button>
+                    </div>
+                }
+                else if (HasError)
+                {
+                    <!-- Estado de Erro -->
+                    <div class="flex flex-col items-center justify-center py-8 space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <div class="text-center space-y-2">
+                            <h2 class="text-base font-semibold text-slate-900">
+                                Erro na Redefinição
+                            </h2>
+                            <p class="text-sm text-slate-600">
+                                @Message
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-border-soft space-y-2">
+                        <button type="button"
+                                @onclick="GoToForgotPassword"
+                                class="h-9 w-full rounded-md bg-primary text-white text-sm font-medium hover:bg-primary-strong">
+                            Solicitar Novo Link
+                        </button>
+                        <button type="button"
+                                @onclick="GoToLogin"
+                                class="h-9 w-full rounded-md border border-border-soft text-slate-700 text-sm font-medium hover:bg-slate-50">
+                            Voltar para Login
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- Formulário de Redefinição -->
+                    <div class="space-y-4">
+                        <p class="text-[11px] text-slate-600 text-center pb-2">
+                            Digite sua nova senha abaixo.
+                        </p>
+
+                        <div class="grid md:grid-cols-[1.1fr,0.9fr] gap-3">
+                            <div class="space-y-3">
+                                <!-- Nova Senha -->
+                                <div class="space-y-1">
+                                    <label for="newPassword" class="text-xs text-slate-700">
+                                        Senha
+                                    </label>
+                                    <input id="newPassword"
+                                           type="@NewPasswordInputType"
+                                           autocomplete="new-password"
+                                           placeholder="Informe uma senha"
+                                           class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                           value="@NewPassword"
+                                           @oninput="OnNewPasswordChanged"/>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <input id="showNewPassword"
+                                               type="checkbox"
+                                               class="h-3 w-3 rounded border border-border-soft"
+                                               checked="@ShowNewPassword"
+                                               @onchange="ToggleShowNewPassword"/>
+                                        <label for="showNewPassword"
+                                               class="text-[10px] text-slate-600 cursor-pointer">
+                                            Mostrar senha
+                                        </label>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(NewPasswordError))
+                                    {
+                                        <p class="text-[10px] text-red-500 mt-0.5">@NewPasswordError</p>
+                                    }
+                                </div>
+
+                                <!-- Confirmar Nova Senha -->
+                                <div class="space-y-1">
+                                    <label for="confirmPassword" class="text-xs text-slate-700">
+                                        Confirmação de senha
+                                    </label>
+                                    <input id="confirmPassword"
+                                           type="@ConfirmPasswordInputType"
+                                           autocomplete="new-password"
+                                           placeholder="Confirme a senha informada"
+                                           class="h-9 w-full rounded-md border border-border-soft bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                                           value="@ConfirmPassword"
+                                           @oninput="OnConfirmPasswordChanged"/>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <input id="showConfirmPassword"
+                                               type="checkbox"
+                                               class="h-3 w-3 rounded border border-border-soft"
+                                               checked="@ShowConfirmPassword"
+                                               @onchange="ToggleShowConfirmPassword"/>
+                                        <label for="showConfirmPassword"
+                                               class="text-[10px] text-slate-600 cursor-pointer">
+                                            Mostrar confirmação
+                                        </label>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(ConfirmPasswordError))
+                                    {
+                                        <p class="text-[10px] text-red-500 mt-0.5">@ConfirmPasswordError</p>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Regras de Senha -->
+                            <div class="rounded-md border border-border-soft bg-card-muted px-2.5 py-2.5">
+                                <div class="text-[10px] text-slate-700 mb-1 font-medium">
+                                    Regras para criação de senha
+                                </div>
+                                <ul class="space-y-0.5 mt-1">
+                                    <li class="@GetRuleClass(HasMinLength)">
+                                        @GetRuleIcon(HasMinLength)
+                                        8 a 16 caracteres
+                                    </li>
+                                    <li class="@GetRuleClass(HasNumber)">
+                                        @GetRuleIcon(HasNumber)
+                                        Ao menos 1 número
+                                    </li>
+                                    <li class="@GetRuleClass(HasLower)">
+                                        @GetRuleIcon(HasLower)
+                                        Ao menos 1 letra minúscula
+                                    </li>
+                                    <li class="@GetRuleClass(HasUpper)">
+                                        @GetRuleIcon(HasUpper)
+                                        Ao menos 1 letra maiúscula
+                                    </li>
+                                    <li class="@GetRuleClass(HasSpecial)">
+                                        @GetRuleIcon(HasSpecial)
+                                        Ao menos 1 caractere especial (! @@ # $ % &amp; *)
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(GeneralError))
+                        {
+                            <div class="rounded-md bg-red-50 border border-red-200 p-3">
+                                <p class="text-[11px] text-red-600">@GeneralError</p>
+                            </div>
+                        }
+
+                        <div class="space-y-1.5">
+                            <label class="text-[11px] text-slate-700">
+                                Não sou um robô
+                            </label>
+
+                            <div id="recaptcha-container" class="mt-1"></div>
+
+                            @if (!string.IsNullOrEmpty(CaptchaError))
+                            {
+                                <p class="text-[11px] text-red-500 mt-0.5">@CaptchaError</p>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-border-soft mt-4">
+                        <button type="button"
+                                @onclick="OnSubmitAsync"
+                                disabled="@IsSubmitting"
+                                class="h-9 w-full rounded-md cursor-pointer bg-primary text-white text-sm font-medium hover:bg-primary-strong disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center">
+                            @if (IsSubmitting)
+                            {
+                                <svg class="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                     fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                <span>Redefinindo...</span>
+                            }
+                            else
+                            {
+                                <span>Redefinir Senha</span>
+                            }
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? Email { get; set; }
+    private string? Token { get; set; }
+
+    private string NewPassword { get; set; } = string.Empty;
+    private string ConfirmPassword { get; set; } = string.Empty;
+
+    private bool ShowNewPassword { get; set; }
+    private bool ShowConfirmPassword { get; set; }
+
+    private string? NewPasswordError { get; set; }
+    private string? ConfirmPasswordError { get; set; }
+    private string? GeneralError { get; set; }
+    private string? CaptchaError { get; set; }
+    private string? RecaptchaToken { get; set; }
+
+    private string? RecaptchaSiteKey => Configuration["RecaptchaSettings:SiteKey"];
+
+    private bool IsProcessing { get; set; } = true;
+    private bool IsSubmitting { get; set; }
+    private bool IsSuccess { get; set; }
+    private bool HasError { get; set; }
+    private string Message { get; set; } = string.Empty;
+    private bool _captchaInitialized;
+
+    private string NewPasswordInputType => ShowNewPassword ? "text" : "password";
+    private string ConfirmPasswordInputType => ShowConfirmPassword ? "text" : "password";
+
+    // Password validation rules
+    private bool HasMinLength => NewPassword.Length is >= 8 and <= 16;
+    private bool HasUpper => NewPassword.Any(char.IsUpper);
+    private bool HasLower => NewPassword.Any(char.IsLower);
+    private bool HasNumber => NewPassword.Any(char.IsDigit);
+    private bool HasSpecial => NewPassword.Any(c => "!@#$%&*".Contains(c));
+
+    private RenderFragment GetRuleIcon(bool ok) => builder =>
+    {
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", ok
+            ? "mr-1.5 text-[11px] text-emerald-600"
+            : "mr-1.5 text-[11px] text-slate-300");
+        builder.AddContent(2, ok ? "✓" : "•");
+        builder.CloseElement();
+    };
+
+    private string GetRuleClass(bool ok) =>
+        ok
+            ? "text-[10px] text-emerald-700 flex items-center"
+            : "text-[10px] text-slate-500 flex items-center";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Parse query parameters manually to preserve special characters like +
+        var uri = new Uri(Nav.Uri);
+        var query = uri.Query;
+
+        if (!string.IsNullOrEmpty(query))
+        {
+            // Remove the leading '?'
+            if (query.StartsWith("?"))
+            {
+                query = query.Substring(1);
+            }
+
+            var paramsList = query.Split('&');
+            foreach (var param in paramsList)
+            {
+                var parts = param.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    var key = parts[0];
+                    var value = parts[1];
+
+                    if (key.Equals("email", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Email = Uri.UnescapeDataString(value);
+                    }
+                    else if (key.Equals("token", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Token = Uri.UnescapeDataString(value);
+                    }
+                }
+            }
+        }
+
+        await Task.Delay(500); // Breve delay para simular validação do link
+        ValidateLinkParameters();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Sempre tenta inicializar no primeiro render quando a página está carregada
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+
+            // Se ainda está processando, aguarda um pouco para o DOM estar pronto
+            if (IsProcessing)
+            {
+                return;
+            }
+        }
+
+        // Inicializa o captcha apenas uma vez quando o formulário está visível
+        if (!_captchaInitialized && !IsProcessing && !HasError && !IsSuccess)
+        {
+            _captchaInitialized = true;
+
+            try
+            {
+                await Js.InvokeVoidAsync("recaptchaInterop.init", RecaptchaSiteKey);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao inicializar reCAPTCHA: {ex.Message}");
+                // Reseta a flag para tentar novamente na próxima renderização
+                _captchaInitialized = false;
+            }
+        }
+    }
+
+    private void ValidateLinkParameters()
+    {
+        IsProcessing = false;
+
+        if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Token))
+        {
+            HasError = true;
+            Message = "Link de redefinição inválido. Verifique se você copiou o link completo do email.";
+        }
+
+        // Força re-renderização para acionar OnAfterRenderAsync novamente
+        StateHasChanged();
+    }
+
+    private void OnNewPasswordChanged(ChangeEventArgs e)
+    {
+        NewPassword = e.Value?.ToString() ?? string.Empty;
+        NewPasswordError = null;
+        GeneralError = null;
+    }
+
+    private void OnConfirmPasswordChanged(ChangeEventArgs e)
+    {
+        ConfirmPassword = e.Value?.ToString() ?? string.Empty;
+        ConfirmPasswordError = null;
+        GeneralError = null;
+    }
+
+    private void ToggleShowNewPassword(ChangeEventArgs e)
+        => ShowNewPassword = (bool)e.Value!;
+
+    private void ToggleShowConfirmPassword(ChangeEventArgs e)
+        => ShowConfirmPassword = (bool)e.Value!;
+
+    private async Task OnSubmitAsync()
+    {
+        if (IsSubmitting)
+            return;
+
+        IsSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var isValid = ValidateForm();
+
+            if (!isValid)
+            {
+                IsSubmitting = false;
+                return;
+            }
+
+            RecaptchaToken = await Js.InvokeAsync<string>("recaptchaInterop.getResponse");
+
+            if (string.IsNullOrWhiteSpace(RecaptchaToken))
+            {
+                CaptchaError = "Confirme que você não é um robô!";
+                IsSubmitting = false;
+                return;
+            }
+
+            CaptchaError = null;
+
+            var (ok, message) = await Auth.ResetPasswordAsync(Email!, Token!, NewPassword, ConfirmPassword, RecaptchaToken);
+
+            if (!ok)
+            {
+                GeneralError = message ?? "Erro ao redefinir senha.";
+                await Js.InvokeVoidAsync("recaptchaInterop.reset");
+                return;
+            }
+
+            IsSuccess = true;
+            Message = message ?? "Senha redefinida com sucesso!";
+
+            // Redirecionar após 2 segundos
+            await Task.Delay(2000);
+            GoToLogin();
+        }
+        finally
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "_grecaptcha");
+            IsSubmitting = false;
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        var valid = true;
+
+        NewPasswordError = ConfirmPasswordError = GeneralError = null;
+
+        if (string.IsNullOrEmpty(NewPassword))
+        {
+            NewPasswordError = "Campo obrigatório";
+            valid = false;
+        }
+        else if (NewPassword.Length < 8 || NewPassword.Length > 16)
+        {
+            NewPasswordError = "A senha deve ter entre 8 e 16 caracteres.";
+            valid = false;
+        }
+        else if (!(HasMinLength && HasUpper && HasLower && HasNumber && HasSpecial))
+        {
+            NewPasswordError = "A senha não atende a todos os requisitos.";
+            valid = false;
+        }
+
+        if (string.IsNullOrEmpty(ConfirmPassword))
+        {
+            ConfirmPasswordError = "Campo obrigatório";
+            valid = false;
+        }
+        else if (ConfirmPassword != NewPassword)
+        {
+            ConfirmPasswordError = "A confirmação deve ser idêntica à senha.";
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    private void GoToLogin()
+    {
+        Nav.NavigateTo("/entrar");
+    }
+
+    private void GoToForgotPassword()
+    {
+        Nav.NavigateTo("/recuperar-senha");
+    }
+
+}

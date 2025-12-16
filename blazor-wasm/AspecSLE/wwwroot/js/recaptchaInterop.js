@@ -5,13 +5,20 @@ window.recaptchaInterop = (function () {
     // a API carrega assíncronamente; usamos ready pra garantir
     if (!window.grecaptcha) {
       console.warn("reCAPTCHA ainda não carregou");
+      setTimeout(function() {
+        init(siteKey);
+      }, 500);
       return;
     }
 
     window.grecaptcha.ready(function () {
-      if (widgetId !== null) {
-        return; // já inicializado
+      var container = document.getElementById("recaptcha-container");
+      if (!container) {
+        return;
       }
+
+      // Limpa o container para garantir que não haja duplicidade ou erro de re-renderização
+      container.innerHTML = "";
 
       widgetId = window.grecaptcha.render("recaptcha-container", {
         sitekey: siteKey,

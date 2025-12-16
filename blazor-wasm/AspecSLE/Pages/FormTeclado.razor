@@ -1,0 +1,1256 @@
+@page "/form-teclado"
+
+@using AspecSLE.Services
+
+@inject IJSRuntime Js
+
+<PageTitle>Aspec Licita - Formulário com Navegação por Teclado</PageTitle>
+
+<div class="min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">
+                Formulário Navegável (Harbour-style)
+            </span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Preenchimento somente no teclado
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Use as setas, Enter, Ctrl+Home / Ctrl+End, PageUp / PageDown.
+                    Não é permitido pular campos obrigatórios.
+                </p>
+            </div>
+
+            <div class="px-4 pt-3 pb-3 space-y-3 max-h-[60vh] overflow-auto kb-scroll-container">
+                @if (!string.IsNullOrEmpty(_globalError))
+                {
+                    <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        @_globalError
+                    </div>
+                }
+
+                <!-- BLOCO 1 - Dados básicos -->
+                <div class="text-[11px] font-semibold text-slate-600 mt-1">Dados básicos</div>
+
+                <!-- Campo 0: Nome (obrigatório) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-nome">
+                        Nome completo <span class="text-red-500">*</span>
+                    </label>
+                    <input id="campo-nome"
+                           @ref="_fieldNomeRef"
+                           class="h-9 w-full rounded-md border @(string.IsNullOrEmpty(_nomeError) ? "border-border-soft" : "border-red-400") px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Informe o nome"
+                           value="@_nome"
+                           @oninput="e => OnFieldChanged(e, 0)"
+                           @onfocus="() => OnFieldFocus(0)"
+                           @onkeydown="e => OnKeyDown(e, 0)"/>
+                    @if (!string.IsNullOrEmpty(_nomeError))
+                    {
+                        <p class="text-[10px] text-red-500 mt-0.5">@_nomeError</p>
+                    }
+                </div>
+
+                <!-- Campo 1: CPF (obrigatório) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-cpf">
+                        CPF <span class="text-red-500">*</span>
+                    </label>
+                    <input id="campo-cpf"
+                           @ref="_fieldCpfRef"
+                           class="h-9 w-full rounded-md border @(string.IsNullOrEmpty(_cpfError) ? "border-border-soft" : "border-red-400") px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="999.999.999-99"
+                           value="@_cpf"
+                           @oninput="e => OnFieldChanged(e, 1)"
+                           @onfocus="() => OnFieldFocus(1)"
+                           @onkeydown="e => OnKeyDown(e, 1)"/>
+                    @if (!string.IsNullOrEmpty(_cpfError))
+                    {
+                        <p class="text-[10px] text-red-500 mt-0.5">@_cpfError</p>
+                    }
+                </div>
+
+                <!-- Campo 2: Email (obrigatório) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-email">
+                        E-mail <span class="text-red-500">*</span>
+                    </label>
+                    <input id="campo-email"
+                           @ref="_fieldEmailRef"
+                           class="h-9 w-full rounded-md border @(string.IsNullOrEmpty(_emailError) ? "border-border-soft" : "border-red-400") px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="email@dominio.com"
+                           value="@_email"
+                           @oninput="e => OnFieldChanged(e, 2)"
+                           @onfocus="() => OnFieldFocus(2)"
+                           @onkeydown="e => OnKeyDown(e, 2)"/>
+                    @if (!string.IsNullOrEmpty(_emailError))
+                    {
+                        <p class="text-[10px] text-red-500 mt-0.5">@_emailError</p>
+                    }
+                </div>
+
+                <!-- Campo 3: Telefone (opcional) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-telefone">
+                        Telefone (opcional)
+                    </label>
+                    <input id="campo-telefone"
+                           @ref="_fieldTelefoneRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="(00) 00000-0000"
+                           value="@_telefone"
+                           @oninput="e => OnFieldChanged(e, 3)"
+                           @onfocus="() => OnFieldFocus(3)"
+                           @onkeydown="e => OnKeyDown(e, 3)"/>
+                </div>
+
+                <!-- BLOCO 2 - Endereço -->
+                <div class="text-[11px] font-semibold text-slate-600 mt-3">Endereço</div>
+
+                <!-- Campo 4: Logradouro -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-logradouro">
+                        Logradouro
+                    </label>
+                    <input id="campo-logradouro"
+                           @ref="_fieldLogradouroRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Rua, avenida..."
+                           value="@_logradouro"
+                           @oninput="e => OnFieldChanged(e, 4)"
+                           @onfocus="() => OnFieldFocus(4)"
+                           @onkeydown="e => OnKeyDown(e, 4)"/>
+                </div>
+
+                <!-- Campo 5: Tipo de endereço (radio) -->
+                <div class="space-y-1">
+                    <span class="text-xs text-slate-700">Tipo de endereço</span>
+                    <div class="flex items-center gap-4">
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="radio"
+                                   name="tipo-endereco"
+                                   value="Comercial"
+                                   @ref="_fieldTipoEndComercialRef"
+                                   checked="@(_tipoEndereco == "Comercial")"
+                                   @onchange="@(() => _tipoEndereco = "Comercial")"
+                                   @onfocus="() => OnFieldFocus(5)"
+                                   @onkeydown="e => OnKeyDown(e, 5)"
+                                   @onkeydown:preventDefault="true"
+                                   class="h-3.5 w-3.5 border-border-soft text-primary"/>
+                            <span class="ml-1">Comercial</span>
+                        </label>
+
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="radio"
+                                   name="tipo-endereco"
+                                   value="Empresarial"
+                                   @ref="_fieldTipoEndEmpresarialRef"
+                                   checked="@(_tipoEndereco == "Empresarial")"
+                                   @onchange="@(() => _tipoEndereco = "Empresarial")"
+                                   @onfocus="() => OnFieldFocus(5)"
+                                   @onkeydown="e => OnKeyDown(e, 5)"
+                                   @onkeydown:preventDefault="true"
+                                   class="h-3.5 w-3.5 border-border-soft text-primary"/>
+                            <span class="ml-1">Empresarial</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Campo 6: UF (dropdown + input com filtro) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-uf">
+                        UF
+                    </label>
+                    <div class="relative">
+                        <input id="campo-uf"
+                               @ref="_fieldUfRef"
+                               value="@_uf"
+                               @oninput="e => OnFieldChanged(e, 6)"
+                               @onfocus="() => OnFieldFocus(6)"
+                               @onkeydown="e => OnKeyDown(e, 6)"
+                               placeholder="UF"
+                               autocomplete="off"
+                               autocorrect="off"
+                               autocapitalize="off"
+                               spellcheck="false"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"/>
+
+                        <button type="button"
+                                tabindex="-1"
+                                class="absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400"
+                                @onclick="ToggleUfDropdown">
+                            ▼
+                        </button>
+
+                        @if (_ufDropdownOpen)
+                        {
+                            var ufsFiltradas = GetUfsFiltradas();
+                            <div
+                                class="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs">
+                                @for (var i = 0; i < ufsFiltradas.Count; i++)
+                                {
+                                    var uf = ufsFiltradas[i];
+                                    var isFocused = _ufFocusedIndex.HasValue && _ufFocusedIndex.Value == i;
+                                    var localUf = uf;
+
+                                    <div
+                                        class="px-2 py-1 cursor-pointer @(isFocused ? "bg-primary text-white" : "hover:bg-slate-100")"
+                                        @onclick="@(() => SelectUf(localUf))">
+                                        @localUf
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Campo 7: Cidade (dropdown + input com filtro) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-cidade">
+                        Cidade
+                    </label>
+                    <div class="relative">
+                        <input id="campo-cidade"
+                               @ref="_fieldCidadeRef"
+                               value="@_cidade"
+                               @oninput="e => OnFieldChanged(e, 7)"
+                               @onfocus="() => OnFieldFocus(7)"
+                               @onkeydown="e => OnKeyDown(e, 7)"
+                               placeholder="Cidade"
+                               autocomplete="off"
+                               autocorrect="off"
+                               autocapitalize="off"
+                               spellcheck="false"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"/>
+
+                        <button type="button"
+                                tabindex="-1"
+                                class="absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400"
+                                @onclick="ToggleCidadeDropdown">
+                            ▼
+                        </button>
+
+                        @if (_cidadeDropdownOpen)
+                        {
+                            var cidadesFiltradas = GetCidadesFiltradas();
+                            <div
+                                class="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs">
+                                @for (var i = 0; i < cidadesFiltradas.Count; i++)
+                                {
+                                    var opcao = cidadesFiltradas[i];
+                                    var isFocused = _cidadeFocusedIndex.HasValue && _cidadeFocusedIndex.Value == i;
+                                    var localCidade = opcao;
+
+                                    <div
+                                        class="px-2 py-1 cursor-pointer @(isFocused ? "bg-primary text-white" : "hover:bg-slate-100")"
+                                        @onclick="@(() => SelectCidade(localCidade))">
+                                        @localCidade
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Campo 8: Tipo de via (checkboxes) -->
+                <div class="space-y-1">
+                    <span class="text-xs text-slate-700">
+                        Tipo de via <span class="text-red-500">*</span>
+                    </span>
+                    <div class="flex items-center gap-4">
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="checkbox"
+                                   @ref="_fieldTipoViaRuaRef"
+                                   checked="@_tipoViaRua"
+                                   @onchange="@(() => ToggleTipoVia(0))"
+                                   @onfocus="() => OnFieldFocus(8)"
+                                   @onkeydown="e => OnKeyDown(e, 8)"
+                                   @onkeydown:preventDefault="true"
+                                   class="h-3.5 w-3.5 border-border-soft text-primary"/>
+                            <span class="ml-1">Rua</span>
+                        </label>
+
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="checkbox"
+                                   @ref="_fieldTipoViaAvenidaRef"
+                                   checked="@_tipoViaAvenida"
+                                   @onchange="@(() => ToggleTipoVia(1))"
+                                   @onfocus="() => OnFieldFocus(8)"
+                                   @onkeydown="e => OnKeyDown(e, 8)"
+                                   @onkeydown:preventDefault="true"
+                                   class="h-3.5 w-3.5 border-border-soft text-primary"/>
+                            <span class="ml-1">Avenida</span>
+                        </label>
+
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="checkbox"
+                                   @ref="_fieldTipoViaLogradouroRef"
+                                   checked="@_tipoViaLogradouro"
+                                   @onchange="@(() => ToggleTipoVia(2))"
+                                   @onfocus="() => OnFieldFocus(8)"
+                                   @onkeydown="e => OnKeyDown(e, 8)"
+                                   @onkeydown:preventDefault="true"
+                                   class="h-3.5 w-3.5 border-border-soft text-primary"/>
+                            <span class="ml-1">Logradouro</span>
+                        </label>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_tipoViaError))
+                    {
+                        <p class="text-[10px] text-red-500 mt-0.5">@_tipoViaError</p>
+                    }
+                </div>
+
+                <!-- Campo 9: Descrição da via (dependente dos checkboxes) -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-desc-via">
+                        Nome da rua/avenida/logradouro
+                    </label>
+                    <input id="campo-desc-via"
+                           @ref="_fieldDescricaoViaRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-100 disabled:text-slate-400"
+                           placeholder="Ex.: Rua das Flores, Av. Paulista..."
+                           value="@_descricaoVia"
+                           disabled="@(!HasTipoViaSelecionado)"
+                           @oninput="e => OnFieldChanged(e, 9)"
+                           @onfocus="() => OnFieldFocus(9)"
+                           @onkeydown="e => OnKeyDown(e, 9)"/>
+                </div>
+
+                <!-- Campo 10: Bairro -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-bairro">
+                        Bairro
+                    </label>
+                    <input id="campo-bairro"
+                           @ref="_fieldBairroRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Bairro"
+                           value="@_bairro"
+                           @oninput="e => OnFieldChanged(e, 10)"
+                           @onfocus="() => OnFieldFocus(10)"
+                           @onkeydown="e => OnKeyDown(e, 10)"/>
+                </div>
+
+                <!-- Campo 11: Número -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-numero">
+                        Número
+                    </label>
+                    <input id="campo-numero"
+                           @ref="_fieldNumeroRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Número"
+                           value="@_numero"
+                           @oninput="e => OnFieldChanged(e, 11)"
+                           @onfocus="() => OnFieldFocus(11)"
+                           @onkeydown="e => OnKeyDown(e, 11)"/>
+                </div>
+
+                <!-- Campo 12: CEP -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-cep">
+                        CEP
+                    </label>
+                    <input id="campo-cep"
+                           @ref="_fieldCepRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="00000-000"
+                           value="@_cep"
+                           @oninput="e => OnFieldChanged(e, 12)"
+                           @onfocus="() => OnFieldFocus(12)"
+                           @onkeydown="e => OnKeyDown(e, 12)"/>
+                </div>
+
+                <!-- Campo 13: Complemento -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-complemento">
+                        Complemento
+                    </label>
+                    <input id="campo-complemento"
+                           @ref="_fieldComplementoRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Apartamento, bloco..."
+                           value="@_complemento"
+                           @oninput="e => OnFieldChanged(e, 13)"
+                           @onfocus="() => OnFieldFocus(13)"
+                           @onkeydown="e => OnKeyDown(e, 13)"/>
+                </div>
+
+                <!-- BLOCO 3 - Dados profissionais -->
+                <div class="text-[11px] font-semibold text-slate-600 mt-3">Dados profissionais</div>
+
+                <!-- Campo 14: Empresa -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-empresa">
+                        Empresa <span class="text-red-500">*</span>
+                    </label>
+                    <input id="campo-empresa"
+                           @ref="_fieldEmpresaRef"
+                           class="h-9 w-full rounded-md border @(string.IsNullOrEmpty(_empresaError) ? "border-border-soft" : "border-red-400") px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Nome da empresa"
+                           value="@_empresa"
+                           @oninput="e => OnFieldChanged(e, 14)"
+                           @onfocus="() => OnFieldFocus(14)"
+                           @onkeydown="e => OnKeyDown(e, 14)"/>
+                    @if (!string.IsNullOrEmpty(_empresaError))
+                    {
+                        <p class="text-[10px] text-red-500 mt-0.5">@_empresaError</p>
+                    }
+                </div>
+
+                <!-- Campo 15: Cargo -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-cargo">
+                        Cargo
+                    </label>
+                    <input id="campo-cargo"
+                           @ref="_fieldCargoRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Cargo"
+                           value="@_cargo"
+                           @oninput="e => OnFieldChanged(e, 15)"
+                           @onfocus="() => OnFieldFocus(15)"
+                           @onkeydown="e => OnKeyDown(e, 15)"/>
+                </div>
+
+                <!-- Campo 16: Departamento -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-departamento">
+                        Departamento
+                    </label>
+                    <input id="campo-departamento"
+                           @ref="_fieldDepartamentoRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Departamento"
+                           value="@_departamento"
+                           @oninput="e => OnFieldChanged(e, 16)"
+                           @onfocus="() => OnFieldFocus(16)"
+                           @onkeydown="e => OnKeyDown(e, 16)"/>
+                </div>
+
+                <!-- BLOCO 4 - Contatos adicionais -->
+                <div class="text-[11px] font-semibold text-slate-600 mt-3">Contatos adicionais</div>
+
+                <!-- Campo 17: Celular -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-celular">
+                        Celular
+                    </label>
+                    <input id="campo-celular"
+                           @ref="_fieldCelularRef"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="(00) 00000-0000"
+                           value="@_celular"
+                           @oninput="e => OnFieldChanged(e, 17)"
+                           @onfocus="() => OnFieldFocus(17)"
+                           @onkeydown="e => OnKeyDown(e, 17)"/>
+                </div>
+
+                <!-- Campo 18: WhatsApp comercial -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-whatsapp2">
+                        WhatsApp comercial
+                    </label>
+                    <input id="campo-whatsapp2"
+                           @ref="_fieldWhatsapp2Ref"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="(00) 00000-0000"
+                           value="@_whatsappComercial"
+                           @oninput="e => OnFieldChanged(e, 18)"
+                           @onfocus="() => OnFieldFocus(18)"
+                           @onkeydown="e => OnKeyDown(e, 18)"/>
+                </div>
+
+                <!-- Campo 19: E-mail alternativo -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-email2">
+                        E-mail alternativo
+                    </label>
+                    <input id="campo-email2"
+                           @ref="_fieldEmail2Ref"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="email@alternativo.com"
+                           value="@_emailAlternativo"
+                           @oninput="e => OnFieldChanged(e, 19)"
+                           @onfocus="() => OnFieldFocus(19)"
+                           @onkeydown="e => OnKeyDown(e, 19)"/>
+                </div>
+
+                <!-- BLOCO 5 - Observações -->
+                <div class="text-[11px] font-semibold text-slate-600 mt-3">Observações</div>
+
+                <!-- Campo 20: Observação 1 -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-obs1">
+                        Observação 1
+                    </label>
+                    <input id="campo-obs1"
+                           @ref="_fieldObs1Ref"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Observação 1"
+                           value="@_obs1"
+                           @oninput="e => OnFieldChanged(e, 20)"
+                           @onfocus="() => OnFieldFocus(20)"
+                           @onkeydown="e => OnKeyDown(e, 20)"/>
+                </div>
+
+                <!-- Campo 21: Observação 2 -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-obs2">
+                        Observação 2
+                    </label>
+                    <input id="campo-obs2"
+                           @ref="_fieldObs2Ref"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Observação 2"
+                           value="@_obs2"
+                           @oninput="e => OnFieldChanged(e, 21)"
+                           @onfocus="() => OnFieldFocus(21)"
+                           @onkeydown="e => OnKeyDown(e, 21)"/>
+                </div>
+
+                <!-- Campo 22: Observação 3 -->
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-700" for="campo-obs3">
+                        Observação 3
+                    </label>
+                    <input id="campo-obs3"
+                           @ref="_fieldObs3Ref"
+                           class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                           placeholder="Observação 3"
+                           value="@_obs3"
+                           @oninput="e => OnFieldChanged(e, 22)"
+                           @onfocus="() => OnFieldFocus(22)"
+                           @onkeydown="e => OnKeyDown(e, 22)"/>
+                </div>
+            </div>
+
+            <div class="px-4 pt-1 pb-3 border-t border-border-soft text-[11px] text-slate-500 space-y-0.5">
+                <p>
+                    Navegação entre campos:
+                    <span class="font-medium">↑ / ↓ / Enter</span> muda de campo.
+                </p>
+                <p>
+                    <span class="font-medium">Ctrl + Home</span> vai para o primeiro campo,
+                    <span class="font-medium">Ctrl + End</span> vai para o último campo.
+                </p>
+                <p>
+                    <span class="font-medium">PageUp / PageDown</span> pulam um "bloco" de campos
+                    (sem permitir pular obrigatórios não preenchidos).
+                </p>
+                <p>
+                    Nos combos de UF/Cidade: digite para filtrar, use <span class="font-medium">F4</span> ou
+                    <span class="font-medium">Espaço</span> para abrir, setas para navegar,
+                    <span class="font-medium">Espaço</span> para selecionar e
+                    <span class="font-medium">Enter</span> para selecionar e avançar.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private const int TotalFields = 23;
+    private const int PageSize = 8;
+
+    // Refs (0..22)
+    private ElementReference _fieldNomeRef; // 0
+    private ElementReference _fieldCpfRef; // 1
+    private ElementReference _fieldEmailRef; // 2
+    private ElementReference _fieldTelefoneRef; // 3
+
+    private ElementReference _fieldLogradouroRef; // 4
+    private ElementReference _fieldTipoEndComercialRef; // 5
+    private ElementReference _fieldTipoEndEmpresarialRef; // 5
+
+    private ElementReference _fieldUfRef; // 6
+    private ElementReference _fieldCidadeRef; // 7
+
+    private ElementReference _fieldTipoViaRuaRef; // 8 (grupo checkboxes)
+    private ElementReference _fieldTipoViaAvenidaRef; // 8
+    private ElementReference _fieldTipoViaLogradouroRef; // 8
+
+    private ElementReference _fieldDescricaoViaRef; // 9
+
+    private ElementReference _fieldBairroRef; // 10
+    private ElementReference _fieldNumeroRef; // 11
+
+    private ElementReference _fieldCepRef; // 12
+    private ElementReference _fieldComplementoRef; // 13
+
+    private ElementReference _fieldEmpresaRef; // 14
+    private ElementReference _fieldCargoRef; // 15
+    private ElementReference _fieldDepartamentoRef; // 16
+
+    private ElementReference _fieldCelularRef; // 17
+    private ElementReference _fieldWhatsapp2Ref; // 18
+    private ElementReference _fieldEmail2Ref; // 19
+
+    private ElementReference _fieldObs1Ref; // 20
+    private ElementReference _fieldObs2Ref; // 21
+    private ElementReference _fieldObs3Ref; // 22
+
+    // Valores
+    private string _nome = string.Empty;
+    private string _cpf = string.Empty;
+    private string _email = string.Empty;
+    private string _telefone = string.Empty;
+
+    private string _logradouro = string.Empty;
+    private string _tipoEndereco = string.Empty; // Comercial / Empresarial
+
+    private string _uf = string.Empty;
+    private string _cidade = string.Empty;
+
+    private bool _tipoViaRua;
+    private bool _tipoViaAvenida;
+    private bool _tipoViaLogradouro;
+    private int _tipoViaFocusIndex; // 0 = Rua, 1 = Avenida, 2 = Logradouro
+    private string _descricaoVia = string.Empty;
+
+    private string _bairro = string.Empty;
+    private string _numero = string.Empty;
+    private string _cep = string.Empty;
+    private string _complemento = string.Empty;
+
+    private string _empresa = string.Empty;
+    private string _cargo = string.Empty;
+    private string _departamento = string.Empty;
+
+    private string _celular = string.Empty;
+    private string _whatsappComercial = string.Empty;
+    private string _emailAlternativo = string.Empty;
+
+    private string _obs1 = string.Empty;
+    private string _obs2 = string.Empty;
+    private string _obs3 = string.Empty;
+
+    // Radio: qual está focado (0 = Comercial, 1 = Empresarial)
+    private int _tipoEnderecoFocusIndex;
+
+    private bool HasTipoViaSelecionado =>
+        _tipoViaRua || _tipoViaAvenida || _tipoViaLogradouro;
+
+    // Dropdowns UF/Cidade
+    private readonly string[] _ufs =
+    [
+        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+        "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+        "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+    ];
+
+    private IReadOnlyList<string> _cidadesBaseAtual = Array.Empty<string>();
+
+    private bool _ufDropdownOpen;
+    private int? _ufFocusedIndex;
+
+    private bool _cidadeDropdownOpen;
+    private int? _cidadeFocusedIndex;
+
+    // Erros
+    private string? _nomeError;
+    private string? _cpfError;
+    private string? _emailError;
+    private string? _empresaError;
+    private string? _tipoViaError;
+
+    private string? _globalError;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await FocusFieldAsync(0);
+        }
+    }
+
+    private ElementReference GetFieldRef(int index) => index switch
+    {
+        0 => _fieldNomeRef,
+        1 => _fieldCpfRef,
+        2 => _fieldEmailRef,
+        3 => _fieldTelefoneRef,
+        4 => _fieldLogradouroRef,
+        5 => _fieldTipoEndComercialRef,
+        6 => _fieldUfRef,
+        7 => _fieldCidadeRef,
+        8 => _tipoViaFocusIndex switch
+        {
+            0 => _fieldTipoViaRuaRef,
+            1 => _fieldTipoViaAvenidaRef,
+            2 => _fieldTipoViaLogradouroRef,
+            _ => _fieldTipoViaRuaRef
+        },
+        9 => _fieldDescricaoViaRef,
+        10 => _fieldBairroRef,
+        11 => _fieldNumeroRef,
+        12 => _fieldCepRef,
+        13 => _fieldComplementoRef,
+        14 => _fieldEmpresaRef,
+        15 => _fieldCargoRef,
+        16 => _fieldDepartamentoRef,
+        17 => _fieldCelularRef,
+        18 => _fieldWhatsapp2Ref,
+        19 => _fieldEmail2Ref,
+        20 => _fieldObs1Ref,
+        21 => _fieldObs2Ref,
+        22 => _fieldObs3Ref,
+        _ => _fieldNomeRef
+    };
+
+    private async Task FocusFieldAsync(int index, bool center = false)
+    {
+        if (index < 0 || index >= TotalFields)
+            return;
+
+        var fieldRef = GetFieldRef(index);
+        await Js.InvokeVoidAsync("keyboardForm.focusElement", fieldRef, center);
+    }
+
+    private async Task OnFieldFocus(int index)
+    {
+        var firstInvalid = GetFirstInvalidRequiredFieldIndex();
+        if (firstInvalid.HasValue && firstInvalid.Value < index)
+        {
+            _globalError = "Preencha os campos obrigatórios na ordem antes de avançar.";
+            await FocusFieldAsync(firstInvalid.Value, center: true);
+            StateHasChanged();
+        }
+        else
+        {
+            _globalError = null;
+        }
+    }
+
+    private void OnFieldChanged(ChangeEventArgs e, int index)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+
+        switch (index)
+        {
+            case 0:
+                _nome = value;
+                _nomeError = string.IsNullOrWhiteSpace(_nome) ? "Campo obrigatório" : null;
+                break;
+            case 1:
+                _cpf = value;
+                _cpfError = string.IsNullOrWhiteSpace(_cpf) ? "Campo obrigatório" : null;
+                break;
+            case 2:
+                _email = value;
+                _emailError = string.IsNullOrWhiteSpace(_email) ? "Campo obrigatório" : null;
+                break;
+            case 3:
+                _telefone = value;
+                break;
+            case 4:
+                _logradouro = value;
+                break;
+            case 5:
+                _tipoEndereco = value;
+                break;
+            case 6: // UF
+                _uf = value?.ToUpperInvariant() ?? string.Empty;
+                AtualizarCidadesBase();
+
+                var ufsFiltradas = GetUfsFiltradas();
+                if (ufsFiltradas.Count > 0)
+                {
+                    _ufDropdownOpen = true;
+                    _ufFocusedIndex = 0;
+                }
+                else
+                {
+                    _ufDropdownOpen = false;
+                    _ufFocusedIndex = null;
+                }
+
+                break;
+            case 7: // Cidade
+                _cidade = value;
+                var cidadesFiltradas = GetCidadesFiltradas();
+                if (cidadesFiltradas.Count > 0)
+                {
+                    _cidadeDropdownOpen = true;
+                    _cidadeFocusedIndex = 0;
+                }
+                else
+                {
+                    _cidadeDropdownOpen = false;
+                    _cidadeFocusedIndex = null;
+                }
+
+                break;
+            case 9: // descrição da via
+                _descricaoVia = value;
+                break;
+            case 10:
+                _bairro = value;
+                break;
+            case 11:
+                _numero = value;
+                break;
+            case 12:
+                _cep = value;
+                break;
+            case 13:
+                _complemento = value;
+                break;
+            case 14:
+                _empresa = value;
+                _empresaError = string.IsNullOrWhiteSpace(_empresa) ? "Campo obrigatório" : null;
+                break;
+            case 15:
+                _cargo = value;
+                break;
+            case 16:
+                _departamento = value;
+                break;
+            case 17:
+                _celular = value;
+                break;
+            case 18:
+                _whatsappComercial = value;
+                break;
+            case 19:
+                _emailAlternativo = value;
+                break;
+            case 20:
+                _obs1 = value;
+                break;
+            case 21:
+                _obs2 = value;
+                break;
+            case 22:
+                _obs3 = value;
+                break;
+        }
+
+        _globalError = null;
+    }
+
+    private void ToggleTipoVia(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                _tipoViaRua = !_tipoViaRua;
+                break;
+            case 1:
+                _tipoViaAvenida = !_tipoViaAvenida;
+                break;
+            case 2:
+                _tipoViaLogradouro = !_tipoViaLogradouro;
+                break;
+        }
+
+        _tipoViaError = null;
+        _globalError = null;
+        StateHasChanged();
+    }
+
+    // Carrega cidades do UF usando o serviço global
+    private void AtualizarCidadesBase()
+    {
+        _cidadesBaseAtual = MunicipiosPorUfService.ObterPorUf(_uf);
+        _cidade = string.Empty;
+        _cidadeFocusedIndex = null;
+        _cidadeDropdownOpen = false;
+    }
+
+    // Listas filtradas pela digitação
+    private IReadOnlyList<string> GetUfsFiltradas()
+    {
+        if (string.IsNullOrWhiteSpace(_uf))
+            return _ufs;
+
+        return _ufs
+            .Where(uf => uf.Contains(_uf, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
+    private IReadOnlyList<string> GetCidadesFiltradas()
+    {
+        if (_cidadesBaseAtual == null || _cidadesBaseAtual.Count == 0)
+            return Array.Empty<string>();
+
+        if (string.IsNullOrWhiteSpace(_cidade))
+            return _cidadesBaseAtual;
+
+        return _cidadesBaseAtual
+            .Where(c => c.IndexOf(_cidade, StringComparison.OrdinalIgnoreCase) >= 0)
+            .ToArray();
+    }
+
+    private void SelectUf(string uf)
+    {
+        if (string.IsNullOrWhiteSpace(uf))
+            return;
+
+        _uf = uf.ToUpperInvariant();
+        _ufDropdownOpen = false;
+        _ufFocusedIndex = null;
+        AtualizarCidadesBase();
+    }
+
+    private void SelectCidade(string cidade)
+    {
+        if (string.IsNullOrWhiteSpace(cidade))
+            return;
+
+        _cidade = cidade;
+        _cidadeDropdownOpen = false;
+        _cidadeFocusedIndex = null;
+    }
+
+    private void ToggleUfDropdown()
+    {
+        var lista = GetUfsFiltradas();
+        if (lista.Count == 0)
+            return;
+
+        _ufDropdownOpen = !_ufDropdownOpen;
+        _ufFocusedIndex = null;
+    }
+
+    private void ToggleCidadeDropdown()
+    {
+        var lista = GetCidadesFiltradas();
+        if (lista.Count == 0)
+            return;
+
+        _cidadeDropdownOpen = !_cidadeDropdownOpen;
+        _cidadeFocusedIndex = null;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e, int index)
+    {
+        // Rádio (index 5)
+        if (index == 5)
+        {
+            if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+            {
+                _tipoEnderecoFocusIndex = _tipoEnderecoFocusIndex == 0 ? 1 : 0;
+                var radioRef = _tipoEnderecoFocusIndex == 0
+                    ? _fieldTipoEndComercialRef
+                    : _fieldTipoEndEmpresarialRef;
+
+                await Js.InvokeVoidAsync("keyboardForm.focusElement", radioRef);
+                return;
+            }
+
+            if (e.Key == " ")
+            {
+                _tipoEndereco = _tipoEnderecoFocusIndex == 0 ? "Comercial" : "Empresarial";
+                StateHasChanged();
+                return;
+            }
+        }
+
+        // Grupo de checkboxes: Tipo de via (index 8)
+        if (index == 8)
+        {
+            if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+            {
+                var total = 3;
+                var forward = e.Key == "ArrowRight";
+                _tipoViaFocusIndex = forward
+                    ? (_tipoViaFocusIndex + 1) % total
+                    : (_tipoViaFocusIndex - 1 + total) % total;
+
+                var targetRef = _tipoViaFocusIndex switch
+                {
+                    0 => _fieldTipoViaRuaRef,
+                    1 => _fieldTipoViaAvenidaRef,
+                    2 => _fieldTipoViaLogradouroRef,
+                    _ => _fieldTipoViaRuaRef
+                };
+
+                await Js.InvokeVoidAsync("keyboardForm.focusElement", targetRef);
+                return;
+            }
+
+            if (e.Key == " ")
+            {
+                ToggleTipoVia(_tipoViaFocusIndex);
+                return;
+            }
+        }
+
+        // DROPDOWNS (UF: 6, Cidade: 7)
+        if (index == 6 || index == 7)
+        {
+            var isUf = index == 6;
+            var open = isUf ? _ufDropdownOpen : _cidadeDropdownOpen;
+            var focusedIndex = isUf ? _ufFocusedIndex : _cidadeFocusedIndex;
+            var options = isUf ? GetUfsFiltradas() : GetCidadesFiltradas();
+            var optionsCount = options.Count;
+
+            // Abrir com F4 ou Espaço
+            if ((e.Key == "F4" || e.Key == " ") && !open)
+            {
+                if (optionsCount == 0)
+                    return;
+
+                if (isUf)
+                {
+                    _ufDropdownOpen = true;
+                    _ufFocusedIndex = null;
+                }
+                else
+                {
+                    _cidadeDropdownOpen = true;
+                    _cidadeFocusedIndex = null;
+                }
+
+                StateHasChanged();
+                return;
+            }
+
+            if (open && optionsCount > 0)
+            {
+                // navegação interna com setas
+                if (e.Key == "ArrowDown" || e.Key == "ArrowUp" ||
+                    e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+                {
+                    var idx = focusedIndex ?? -1;
+                    var forward = e.Key == "ArrowDown" || e.Key == "ArrowRight";
+
+                    idx = forward
+                        ? (idx + 1 + optionsCount) % optionsCount
+                        : (idx - 1 + optionsCount) % optionsCount;
+
+                    if (isUf)
+                        _ufFocusedIndex = idx;
+                    else
+                        _cidadeFocusedIndex = idx;
+
+                    StateHasChanged();
+                    return;
+                }
+
+                // Espaço: seleciona, mas não sai do campo
+                if (e.Key == " ")
+                {
+                    if (focusedIndex.HasValue)
+                    {
+                        var valor = options[focusedIndex.Value];
+                        if (isUf)
+                            SelectUf(valor);
+                        else
+                            SelectCidade(valor);
+                    }
+
+                    StateHasChanged();
+                    return;
+                }
+
+                // Enter: seleciona e vai para o próximo campo
+                if (e.Key == "Enter")
+                {
+                    if (focusedIndex.HasValue)
+                    {
+                        var valor = options[focusedIndex.Value];
+                        if (isUf)
+                            SelectUf(valor);
+                        else
+                            SelectCidade(valor);
+                    }
+
+                    if (!CanLeaveField(index))
+                    {
+                        StateHasChanged();
+                        return;
+                    }
+
+                    var nextIndex = Math.Min(TotalFields - 1, index + 1);
+                    await FocusFieldAsync(nextIndex);
+                    StateHasChanged();
+                    return;
+                }
+
+                // Esc: fecha o dropdown
+                if (e.Key == "Escape")
+                {
+                    if (isUf)
+                    {
+                        _ufDropdownOpen = false;
+                        _ufFocusedIndex = null;
+                    }
+                    else
+                    {
+                        _cidadeDropdownOpen = false;
+                        _cidadeFocusedIndex = null;
+                    }
+
+                    StateHasChanged();
+                    return;
+                }
+            }
+            else
+            {
+                // dropdown fechado: ← / → não fazem nada
+                if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+                    return;
+                // ↑ / ↓ / Enter caem na navegação padrão
+            }
+        }
+
+        // Ctrl + Home => primeiro campo
+        if (e.Key == "Home" && e.CtrlKey)
+        {
+            _globalError = null;
+            await FocusFieldAsync(0, center: true);
+            return;
+        }
+
+        // Ctrl + End => último campo
+        if (e.Key == "End" && e.CtrlKey)
+        {
+            _globalError = null;
+            await FocusFieldAsync(TotalFields - 1, center: true);
+            return;
+        }
+
+        // PageDown => "bloco" pra frente
+        if (e.Key == "PageDown")
+        {
+            var target = Math.Min(TotalFields - 1, index + PageSize);
+            var firstInvalid = GetFirstInvalidRequiredFieldIndex();
+            if (firstInvalid.HasValue && firstInvalid.Value < target)
+            {
+                _globalError = "Preencha os campos obrigatórios na ordem antes de avançar.";
+                await FocusFieldAsync(firstInvalid.Value, center: true);
+            }
+            else
+            {
+                _globalError = null;
+                await FocusFieldAsync(target, center: true);
+            }
+
+            return;
+        }
+
+        // PageUp => "bloco" pra trás
+        if (e.Key == "PageUp")
+        {
+            var target = Math.Max(0, index - PageSize);
+            _globalError = null;
+            await FocusFieldAsync(target, center: true);
+            return;
+        }
+
+        // navegação geral
+        switch (e.Key)
+        {
+            case "ArrowDown":
+            case "Enter":
+            {
+                if (!CanLeaveField(index))
+                    return;
+
+                var nextIndex = Math.Min(TotalFields - 1, index + 1);
+
+                // Centraliza quando cair em UF (6) ou Cidade (7)
+                var center = nextIndex == 6 || nextIndex == 7;
+                await FocusFieldAsync(nextIndex, center);
+                break;
+            }
+            case "ArrowUp":
+            {
+                var prevIndex = Math.Max(0, index - 1);
+
+                // Centraliza quando subir para UF (6) ou Cidade (7)
+                var center = prevIndex == 6 || prevIndex == 7;
+                await FocusFieldAsync(prevIndex, center);
+                break;
+            }
+        }
+    }
+
+    private bool CanLeaveField(int index)
+    {
+        _globalError = null;
+
+        switch (index)
+        {
+            case 0:
+                if (string.IsNullOrWhiteSpace(_nome))
+                {
+                    _nomeError = "Campo obrigatório.";
+                    _globalError = "Preencha o nome antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 1:
+                if (string.IsNullOrWhiteSpace(_cpf))
+                {
+                    _cpfError = "Campo obrigatório.";
+                    _globalError = "Preencha o CPF antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 2:
+                if (string.IsNullOrWhiteSpace(_email))
+                {
+                    _emailError = "Campo obrigatório.";
+                    _globalError = "Preencha o e-mail antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 8: // grupo de via obrigatório
+                if (!HasTipoViaSelecionado)
+                {
+                    _tipoViaError = "Selecione pelo menos um tipo de via.";
+                    _globalError = "Selecione Rua, Avenida ou Logradouro antes de continuar.";
+                    return false;
+                }
+
+                break;
+
+            case 14:
+                if (string.IsNullOrWhiteSpace(_empresa))
+                {
+                    _empresaError = "Campo obrigatório.";
+                    _globalError = "Preencha a empresa antes de continuar.";
+                    return false;
+                }
+
+                break;
+        }
+
+        return true;
+    }
+
+    private int? GetFirstInvalidRequiredFieldIndex()
+    {
+        if (string.IsNullOrWhiteSpace(_nome))
+            return 0;
+
+        if (string.IsNullOrWhiteSpace(_cpf))
+            return 1;
+
+        if (string.IsNullOrWhiteSpace(_email))
+            return 2;
+
+        if (!HasTipoViaSelecionado)
+            return 8;
+
+        if (string.IsNullOrWhiteSpace(_empresa))
+            return 14;
+
+        return null;
+    }
+
+}
