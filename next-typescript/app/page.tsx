@@ -103,6 +103,14 @@ export default function HomePage() {
               <Link href='/form-teclado'>Formulário de Navegação</Link>
             </Button>
 
+            <Button
+              asChild
+              variant='outline'
+              className='border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70'
+            >
+              <Link href='/form-validacao'>Formulário de Validação</Link>
+            </Button>
+
             <p className='text-[11px] md:text-xs text-slate-500'>
               Sem custo de cadastro. Acesso imediato à área do fornecedor.
             </p>
