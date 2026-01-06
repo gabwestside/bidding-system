@@ -1,52 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import {
-  ChangeEvent,
-  FormEvent,
-  KeyboardEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import React, { useEffect, useState, KeyboardEvent } from 'react'
 
-type FormValidacaoModel = {
-  nome: string
-  cpf: string
-  email: string
-  telefone: string
-  logradouro: string
-  tipoEndereco: string
-  uf: string
-  cidade: string
-  tipoViaRua: boolean
-  tipoViaAvenida: boolean
-  tipoViaLogradouro: boolean
-  descricaoVia: string
-}
-
-type Errors = Partial<{
-  nome: string
-  cpf: string
-  email: string
-  tipoEndereco: string
-  tipoViaDummy: string
-  uf: string
-  cidade: string
-}>
-
-const TOTAL_FIELDS = 10 // 0..9
+const TOTAL_FIELDS = 10
 const PAGE_SIZE = 4
 
-// mapa simples de UF -> cidades (exemplo; preencha com os dados reais se quiser)
-const MUNICIPIOS_POR_UF: Record<string, string[]> = {
-  SP: ['São Paulo', 'Campinas', 'Santos'],
-  RJ: ['Rio de Janeiro', 'Niterói', 'Campos dos Goytacazes'],
-  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem'],
-  PR: ['Curitiba', 'Londrina', 'Maringá'],
-  RS: ['Porto Alegre', 'Caxias do Sul', 'Pelotas'],
-}
+const fieldIds = [
+  'campo-nome',
+  'campo-cpf',
+  'campo-email',
+  'campo-telefone',
+  'campo-logradouro',
+  'campo-tipo-end-com',
+  'campo-uf',
+  'campo-cidade',
+  'campo-tipo-via-rua',
+  'campo-desc-via',
+] as const
 
-const UFS = [
+const ufs = [
   'AC',
   'AL',
   'AP',
@@ -76,356 +49,268 @@ const UFS = [
   'TO',
 ]
 
-export default function FormValidacaoPage() {
-  const [model, setModel] = useState<FormValidacaoModel>({
-    nome: '',
-    cpf: '',
-    email: '',
-    telefone: '',
-    logradouro: '',
-    tipoEndereco: '',
-    uf: '',
-    cidade: '',
-    tipoViaRua: false,
-    tipoViaAvenida: false,
-    tipoViaLogradouro: false,
-    descricaoVia: '',
-  })
+type FormValidacaoModel = {
+  Nome: string
+  Cpf: string
+  Email: string
+  Telefone: string
+  Logradouro: string
+  TipoEndereco: string
+  Uf: string
+  Cidade: string
+  TipoViaRua: boolean
+  TipoViaAvenida: boolean
+  TipoViaLogradouro: boolean
+  TipoViaDummy: boolean
+  DescricaoVia: string
+}
 
-  const [errors, setErrors] = useState<Errors>({})
-  const [globalError, setGlobalError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+// stub simples só para exemplo
+function getCidadesPorUf(uf: string): string[] {
+  switch (uf) {
+    case 'SP':
+      return ['São Paulo', 'Campinas', 'Santos']
+    case 'RJ':
+      return ['Rio de Janeiro', 'Niterói']
+    case 'CE':
+      return ['Fortaleza', 'Sobral']
+    default:
+      return []
+  }
+}
 
-  // refs para focar os campos por índice
-  const fieldRefs = useRef<(HTMLInputElement | null)[]>([])
+function getFirstInvalidRequiredFieldIndex(
+  model: FormValidacaoModel
+): number | null {
+  if (!model.Nome.trim()) return 0
+  if (!model.Cpf.trim()) return 1
+  if (!model.Email.trim()) return 2
+  if (!model.TipoEndereco.trim()) return 5
+  if (!model.TipoViaRua && !model.TipoViaAvenida && !model.TipoViaLogradouro)
+    return 8
+  return null
+}
 
-  // 0 = Comercial, 1 = Empresarial
-  const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
+function canLeaveField(
+  model: FormValidacaoModel,
+  index: number
+): { ok: boolean; message?: string } {
+  switch (index) {
+    case 0:
+      if (!model.Nome.trim())
+        return { ok: false, message: 'Preencha o nome antes de continuar.' }
+      break
+    case 1:
+      if (!model.Cpf.trim())
+        return { ok: false, message: 'Preencha o CPF antes de continuar.' }
+      break
+    case 2:
+      if (!model.Email.trim())
+        return { ok: false, message: 'Preencha o e-mail antes de continuar.' }
+      break
+    case 5:
+      if (!model.TipoEndereco.trim())
+        return {
+          ok: false,
+          message: 'Informe o tipo de endereço antes de continuar.',
+        }
+      break
+    case 8:
+      if (
+        !model.TipoViaRua &&
+        !model.TipoViaAvenida &&
+        !model.TipoViaLogradouro
+      ) {
+        return {
+          ok: false,
+          message: 'Selecione pelo menos um tipo de via antes de continuar.',
+        }
+      }
+      break
+  }
+  return { ok: true }
+}
 
-  // UF / Cidade (dropdowns)
-  const [cidadesBaseAtual, setCidadesBaseAtual] = useState<string[]>([])
+function canUseField(model: FormValidacaoModel, index: number): boolean {
+  const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
+  return !(firstInvalid !== null && firstInvalid < index)
+}
 
-  const [ufDropdownOpen, setUfDropdownOpen] = useState(false)
-  const [ufFocusedIndex, setUfFocusedIndex] = useState<number | null>(null)
+function focusField(index: number, center = false) {
+  if (index < 0 || index >= TOTAL_FIELDS) return
+  const id = fieldIds[index]
+  const el = document.getElementById(id) as HTMLElement | null
+  if (!el) return
 
-  const [cidadeDropdownOpen, setCidadeDropdownOpen] = useState(false)
-  const [cidadeFocusedIndex, setCidadeFocusedIndex] = useState<number | null>(
-    null
-  )
-
-  const focusField = (index: number, center = false) => {
-    const el = fieldRefs.current[index]
-    if (el) {
-      el.focus()
-      el.scrollIntoView({
-        behavior: 'smooth',
-        block: center ? 'center' : 'nearest',
-      })
-    }
+  try {
+    ;(el as any).focus({ preventScroll: true })
+  } catch {
+    el.focus()
   }
 
-  // foca no primeiro campo ao montar
+  const container = el.closest('.kb-scroll-container') as HTMLElement | null
+  if (!container) {
+    if (center) el.scrollIntoView({ block: 'center' })
+    else el.scrollIntoView({ block: 'nearest' })
+    return
+  }
+
+  const padding = 16
+  const cRect = container.getBoundingClientRect()
+  const eRect = el.getBoundingClientRect()
+
+  if (center) {
+    const target = eRect.top - cRect.top - (cRect.height / 2 - eRect.height / 2)
+    container.scrollTop += target
+  } else {
+    if (eRect.top < cRect.top + padding) {
+      container.scrollTop += eRect.top - (cRect.top + padding)
+    } else if (eRect.bottom > cRect.bottom - padding) {
+      container.scrollTop += eRect.bottom - (cRect.bottom - padding)
+    }
+  }
+}
+
+const initialModel: FormValidacaoModel = {
+  Nome: '',
+  Cpf: '',
+  Email: '',
+  Telefone: '',
+  Logradouro: '',
+  TipoEndereco: '',
+  Uf: '',
+  Cidade: '',
+  TipoViaRua: false,
+  TipoViaAvenida: false,
+  TipoViaLogradouro: false,
+  TipoViaDummy: false,
+  DescricaoVia: '',
+}
+
+export default function FormValidacaoPage() {
+  const [model, setModel] = useState<FormValidacaoModel>(initialModel)
+  const [cidadesBaseAtual, setCidadesBaseAtual] = useState<string[]>([])
+  const [globalError, setGlobalError] = useState<string | null>(null)
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
+  const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
+
+  // estados do "dropdown lógico"
+  const [ufDropdownMode, setUfDropdownMode] = useState(false)
+  const [ufPendingIndex, setUfPendingIndex] = useState(0)
+  const [cidadeDropdownMode, setCidadeDropdownMode] = useState(false)
+  const [cidadePendingIndex, setCidadePendingIndex] = useState(0)
+
   useEffect(() => {
     focusField(0, true)
   }, [])
 
-  const updateModel = <K extends keyof FormValidacaoModel>(
-    key: K,
-    value: FormValidacaoModel[K]
-  ) => {
-    setModel((prev) => ({ ...prev, [key]: value }))
-    // limpa erro de campo ao digitar
-    setErrors((prev) => ({ ...prev, [key]: undefined }))
-    setGlobalError(null)
-  }
-
-  const getFirstInvalidRequiredFieldIndex = (): number | null => {
-    if (!model.nome.trim()) return 0
-    if (!model.cpf.trim()) return 1
-    if (!model.email.trim()) return 2
-    if (!model.tipoEndereco.trim()) return 5
-    if (!model.tipoViaRua && !model.tipoViaAvenida && !model.tipoViaLogradouro)
-      return 8
-    return null
-  }
-
-  const canLeaveField = (index: number): boolean => {
-    let message: string | null = null
-
-    switch (index) {
-      case 0:
-        if (!model.nome.trim()) message = 'Preencha o nome antes de continuar.'
-        break
-      case 1:
-        if (!model.cpf.trim()) message = 'Preencha o CPF antes de continuar.'
-        break
-      case 2:
-        if (!model.email.trim())
-          message = 'Preencha o e-mail antes de continuar.'
-        break
-      case 5:
-        if (!model.tipoEndereco.trim())
-          message = 'Informe o tipo de endereço antes de continuar.'
-        break
-      case 8:
-        if (
-          !model.tipoViaRua &&
-          !model.tipoViaAvenida &&
-          !model.tipoViaLogradouro
-        ) {
-          message = 'Selecione pelo menos um tipo de via antes de continuar.'
-        }
-        break
-    }
-
-    if (message) {
-      setGlobalError(message)
-      return false
-    }
-
-    setGlobalError(null)
-    return true
-  }
-
   const handleFieldFocus = (index: number) => {
-    const firstInvalid = getFirstInvalidRequiredFieldIndex()
+    const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
     if (firstInvalid !== null && firstInvalid < index) {
       setGlobalError(
         'Preencha os campos obrigatórios na ordem antes de avançar.'
       )
       focusField(firstInvalid, true)
     } else {
-      setGlobalError(null)
+      if (globalError) setGlobalError(null)
     }
   }
 
-  // UF input change
-  const handleUfInput = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase()
-    updateModel('uf', value)
-
-    const cidades =
-      MUNICIPIOS_POR_UF[value as keyof typeof MUNICIPIOS_POR_UF] ?? []
-    setCidadesBaseAtual(cidades)
-    updateModel('cidade', '')
-
-    const filtered = getUfsFiltradas(value)
-    if (filtered.length > 0) {
-      setUfDropdownOpen(true)
-      setUfFocusedIndex(0)
-    } else {
-      setUfDropdownOpen(false)
-      setUfFocusedIndex(null)
-    }
-  }
-
-  // Cidade input change
-  const handleCidadeInput = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    updateModel('cidade', value)
-
-    const filtered = getCidadesFiltradas(cidadesBaseAtual, value)
-    if (filtered.length > 0) {
-      setCidadeDropdownOpen(true)
-      setCidadeFocusedIndex(0)
-    } else {
-      setCidadeDropdownOpen(false)
-      setCidadeFocusedIndex(null)
-    }
-  }
-
-  const getUfsFiltradas = (filter: string) => {
-    if (!filter.trim()) return UFS
-    return UFS.filter((uf) => uf.toLowerCase().includes(filter.toLowerCase()))
-  }
-
-  const getCidadesFiltradas = (base: string[], filter: string) => {
-    if (!base || base.length === 0) return []
-    if (!filter.trim()) return base
-    return base.filter((c) => c.toLowerCase().includes(filter.toLowerCase()))
-  }
-
-  const selectUf = (uf: string) => {
-    const value = uf.toUpperCase()
-    updateModel('uf', value)
-    setUfDropdownOpen(false)
-    setUfFocusedIndex(null)
-
-    const cidades =
-      MUNICIPIOS_POR_UF[value as keyof typeof MUNICIPIOS_POR_UF] ?? []
-    setCidadesBaseAtual(cidades)
-    updateModel('cidade', '')
-    setCidadeDropdownOpen(false)
-    setCidadeFocusedIndex(null)
-  }
-
-  const selectCidade = (cidade: string) => {
-    updateModel('cidade', cidade)
-    setCidadeDropdownOpen(false)
-    setCidadeFocusedIndex(null)
-  }
-
-  const toggleUfDropdown = () => {
-    const options = getUfsFiltradas(model.uf)
-    if (options.length === 0) return
-
-    setUfDropdownOpen((open) => {
-      if (open) {
-        setUfFocusedIndex(null)
-        return false
+  const updateModel = <K extends keyof FormValidacaoModel>(
+    field: K,
+    value: FormValidacaoModel[K]
+  ) => {
+    setModel((prev) => {
+      const next = { ...prev, [field]: value }
+      if (
+        field === 'TipoViaRua' ||
+        field === 'TipoViaAvenida' ||
+        field === 'TipoViaLogradouro'
+      ) {
+        const anyChecked =
+          (field === 'TipoViaRua' ? (value as boolean) : prev.TipoViaRua) ||
+          (field === 'TipoViaAvenida'
+            ? (value as boolean)
+            : prev.TipoViaAvenida) ||
+          (field === 'TipoViaLogradouro'
+            ? (value as boolean)
+            : prev.TipoViaLogradouro)
+        next.TipoViaDummy = anyChecked
       }
-      setUfFocusedIndex(0)
-      return true
+      return next
     })
   }
 
-  const toggleCidadeDropdown = () => {
-    const options = getCidadesFiltradas(cidadesBaseAtual, model.cidade)
-    if (options.length === 0) return
-
-    setCidadeDropdownOpen((open) => {
-      if (open) {
-        setCidadeFocusedIndex(null)
-        return false
-      }
-      setCidadeFocusedIndex(0)
-      return true
-    })
+  const handleUfChange = (value: string) => {
+    setModel((prev) => ({
+      ...prev,
+      Uf: value,
+      Cidade: '',
+    }))
+    setCidadesBaseAtual(getCidadesPorUf(value))
   }
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
-    const key = e.key
+  const handleKeyDown = (e: KeyboardEvent<HTMLElement>, index: number) => {
+    // ENTER não deve submeter
+    if (e.key === 'Enter') {
+      e.preventDefault()
+    }
 
-    // --------- Rádio (index 5) ---------
+    // bloco especial do rádio de tipo de endereço (index 5)
     if (index === 5) {
-      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        setTipoEnderecoFocusIndex((prev) => (prev === 0 ? 1 : 0))
-        const nextId = tipoEnderecoFocusIndex === 0 ? 1 : 0
-        const elementId =
-          nextId === 0 ? 'campo-tipo-end-com' : 'campo-tipo-end-emp'
-        document.getElementById(elementId)?.focus()
+        setTipoEnderecoFocusIndex((prev) => {
+          const nextIndex = prev === 0 ? 1 : 0
+          const nextId =
+            nextIndex === 0 ? 'campo-tipo-end-com' : 'campo-tipo-end-emp'
+          focusById(nextId, false)
+          return nextIndex
+        })
         return
       }
 
-      if (key === ' ') {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (!model.TipoEndereco) return
+
+        const targetIndex =
+          e.key === 'ArrowDown'
+            ? Math.min(TOTAL_FIELDS - 1, index + 1)
+            : Math.max(0, index - 1)
+
+        focusField(targetIndex)
+        return
+      }
+
+      if (e.key === ' ') {
         e.preventDefault()
         const value = tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial'
-        updateModel('tipoEndereco', value)
+        updateModel('TipoEndereco', value)
         return
-      }
-      // ↑ / ↓ / Enter seguem para navegação geral
-    }
-
-    // --------- Dropdowns UF / Cidade (index 6 e 7) ---------
-    if (index === 6 || index === 7) {
-      const isUf = index === 6
-      const open = isUf ? ufDropdownOpen : cidadeDropdownOpen
-      const focusedIndex = isUf ? ufFocusedIndex : cidadeFocusedIndex
-      const options = isUf
-        ? getUfsFiltradas(model.uf)
-        : getCidadesFiltradas(cidadesBaseAtual, model.cidade)
-      const optionsCount = options.length
-
-      // abre com F4 ou espaço
-      if ((key === 'F4' || key === ' ') && !open) {
-        e.preventDefault()
-        if (optionsCount === 0) return
-
-        if (isUf) {
-          setUfDropdownOpen(true)
-          setUfFocusedIndex(0)
-        } else {
-          setCidadeDropdownOpen(true)
-          setCidadeFocusedIndex(0)
-        }
-        return
-      }
-
-      if (open && optionsCount > 0) {
-        if (
-          key === 'ArrowDown' ||
-          key === 'ArrowUp' ||
-          key === 'ArrowLeft' ||
-          key === 'ArrowRight'
-        ) {
-          e.preventDefault()
-          const forward = key === 'ArrowDown' || key === 'ArrowRight'
-          const current = focusedIndex ?? -1
-          const next = forward
-            ? (current + 1 + optionsCount) % optionsCount
-            : (current - 1 + optionsCount) % optionsCount
-
-          if (isUf) setUfFocusedIndex(next)
-          else setCidadeFocusedIndex(next)
-          return
-        }
-
-        if (key === ' ') {
-          e.preventDefault()
-          if (focusedIndex != null) {
-            const value = options[focusedIndex]
-            if (isUf) selectUf(value)
-            else selectCidade(value)
-          }
-          return
-        }
-
-        if (key === 'Enter') {
-          e.preventDefault()
-          if (focusedIndex != null) {
-            const value = options[focusedIndex]
-            if (isUf) selectUf(value)
-            else selectCidade(value)
-          }
-
-          if (!canLeaveField(index)) return
-
-          const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
-          focusField(nextIndex)
-          return
-        }
-
-        if (key === 'Escape') {
-          e.preventDefault()
-          if (isUf) {
-            setUfDropdownOpen(false)
-            setUfFocusedIndex(null)
-          } else {
-            setCidadeDropdownOpen(false)
-            setCidadeFocusedIndex(null)
-          }
-          return
-        }
-      } else {
-        // dropdown fechado: não usa ← / →
-        if (key === 'ArrowLeft' || key === 'ArrowRight') {
-          e.preventDefault()
-          return
-        }
       }
     }
 
-    // --------- atalhos gerais (Ctrl+Home/End, PageUp/PageDown) ---------
-    if (key === 'Home' && e.ctrlKey) {
+    // Ctrl + Home / Ctrl + End
+    if (e.key === 'Home' && e.ctrlKey) {
       e.preventDefault()
       setGlobalError(null)
       focusField(0, true)
       return
     }
 
-    if (key === 'End' && e.ctrlKey) {
+    if (e.key === 'End' && e.ctrlKey) {
       e.preventDefault()
       setGlobalError(null)
       focusField(TOTAL_FIELDS - 1, true)
       return
     }
 
-    if (key === 'PageDown') {
+    // PageDown / PageUp
+    if (e.key === 'PageDown') {
       e.preventDefault()
       const target = Math.min(TOTAL_FIELDS - 1, index + PAGE_SIZE)
-      const firstInvalid = getFirstInvalidRequiredFieldIndex()
-
+      const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
       if (firstInvalid !== null && firstInvalid < target) {
         setGlobalError(
           'Preencha os campos obrigatórios na ordem antes de avançar.'
@@ -438,7 +323,7 @@ export default function FormValidacaoPage() {
       return
     }
 
-    if (key === 'PageUp') {
+    if (e.key === 'PageUp') {
       e.preventDefault()
       const target = Math.max(0, index - PAGE_SIZE)
       setGlobalError(null)
@@ -446,17 +331,21 @@ export default function FormValidacaoPage() {
       return
     }
 
-    // --------- navegação ↑ / ↓ / Enter entre campos ---------
-    if (key === 'ArrowDown' || key === 'Enter') {
+    // navegação geral entre campos
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault()
-      if (!canLeaveField(index)) return
-
+      const { ok, message } = canLeaveField(model, index)
+      if (!ok) {
+        if (message) setGlobalError(message)
+        return
+      }
+      setGlobalError(null)
       const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
       focusField(nextIndex)
       return
     }
 
-    if (key === 'ArrowUp') {
+    if (e.key === 'ArrowUp') {
       e.preventDefault()
       const prevIndex = Math.max(0, index - 1)
       focusField(prevIndex)
@@ -464,82 +353,204 @@ export default function FormValidacaoPage() {
     }
   }
 
-  const validateAll = (): {
-    errors: Errors
-    firstInvalidIndex: number | null
-  } => {
-    const validation: Errors = {}
-
-    if (!model.nome.trim()) {
-      validation.nome = 'Nome é obrigatório.'
-    } else if (model.nome.length > 150) {
-      validation.nome = 'Nome deve ter no máximo 150 caracteres.'
-    }
-
-    if (!model.cpf.trim()) {
-      validation.cpf = 'CPF é obrigatório.'
-    } else if (!/^\d{11}$/.test(model.cpf)) {
-      validation.cpf = 'CPF deve conter 11 dígitos (apenas números).'
-    }
-
-    if (!model.email.trim()) {
-      validation.email = 'E-mail é obrigatório.'
-    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(model.email)) {
-      validation.email = 'E-mail inválido.'
-    }
-
-    if (!model.tipoEndereco.trim()) {
-      validation.tipoEndereco = 'Informe o tipo de endereço.'
-    }
-
-    if (
-      !model.tipoViaRua &&
-      !model.tipoViaAvenida &&
-      !model.tipoViaLogradouro
-    ) {
-      validation.tipoViaDummy = 'Selecione pelo menos um tipo de via.'
-    }
-
-    // UF / Cidade opcionais para envio? se quiser torná-los obrigatórios, descomente:
-    // if (!model.uf.trim()) validation.uf = "UF é obrigatório.";
-    // if (!model.cidade.trim()) validation.cidade = "Cidade é obrigatória.";
-
-    const order: { index: number; key: keyof Errors }[] = [
-      { index: 0, key: 'nome' },
-      { index: 1, key: 'cpf' },
-      { index: 2, key: 'email' },
-      { index: 5, key: 'tipoEndereco' },
-      { index: 8, key: 'tipoViaDummy' },
-      { index: 6, key: 'uf' },
-      { index: 7, key: 'cidade' },
-    ]
-
-    let firstInvalid: number | null = null
-    for (const item of order) {
-      if (validation[item.key]) {
-        firstInvalid = item.index
-        break
+  const handleSelectKeyDown = (
+    e: KeyboardEvent<HTMLSelectElement>,
+    index: number
+  ) => {
+    if (!canUseField(model, index)) {
+      e.preventDefault()
+      const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
+      if (firstInvalid !== null) {
+        focusField(firstInvalid, true)
       }
-    }
-
-    return { errors: validation, firstInvalidIndex: firstInvalid }
-  }
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    const { errors: validation, firstInvalidIndex } = validateAll()
-    setErrors(validation)
-
-    if (firstInvalidIndex !== null) {
-      setGlobalError('Preencha os campos obrigatórios antes de enviar.')
-      focusField(firstInvalidIndex, true)
-      setSuccessMessage(null)
       return
     }
 
+    const isUf = index === 6
+    const dropdownMode = isUf ? ufDropdownMode : cidadeDropdownMode
+
+    // F4 / Space = abrir "dropdown lógico" ou confirmar (Space)
+    if (e.key === 'F4' || e.key === ' ') {
+      e.preventDefault()
+      if (!dropdownMode) {
+        enterDropdownMode(isUf)
+      } else if (e.key === ' ') {
+        commitDropdownSelection(isUf)
+      }
+      return
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (dropdownMode) {
+        if (isUf) setUfDropdownMode(false)
+        else setCidadeDropdownMode(false)
+      }
+      return
+    }
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (dropdownMode) {
+        const delta = e.key === 'ArrowDown' ? 1 : -1
+        movePending(isUf, delta)
+      } else {
+        const targetIndex =
+          e.key === 'ArrowDown'
+            ? Math.min(TOTAL_FIELDS - 1, index + 1)
+            : Math.max(0, index - 1)
+
+        if (e.key === 'ArrowDown') {
+          const result = canLeaveField(model, index)
+          if (!result.ok) {
+            if (result.message) setGlobalError(result.message)
+            return
+          }
+        }
+
+        focusField(targetIndex)
+      }
+      return
+    }
+
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      if (dropdownMode) {
+        const delta = e.key === 'ArrowRight' ? 1 : -1
+        movePending(isUf, delta)
+      }
+      return
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (dropdownMode) {
+        // fecha o modo, mas NÃO confirma (Space que confirma)
+        if (isUf) setUfDropdownMode(false)
+        else setCidadeDropdownMode(false)
+      }
+
+      const { ok, message } = canLeaveField(model, index)
+      if (!ok) {
+        if (message) setGlobalError(message)
+        return
+      }
+
+      const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
+      focusField(nextIndex)
+      return
+    }
+  }
+
+  const enterDropdownMode = (isUf: boolean) => {
+    if (isUf) {
+      if (!canUseField(model, 6) || ufs.length === 0) return
+      setUfDropdownMode(true)
+
+      const currentIndex = model.Uf ? ufs.indexOf(model.Uf) : -1
+      const startIndex = currentIndex >= 0 ? currentIndex : 0
+      setUfPendingIndex(startIndex)
+
+      const el = document.getElementById('campo-uf') as HTMLSelectElement | null
+      if (el) {
+        el.selectedIndex = startIndex + 1 // +1 por causa da opção "Selecione..."
+        el.focus()
+        el.click() // tentativa de abrir o dropdown nativo
+      }
+    } else {
+      if (
+        !canUseField(model, 7) ||
+        !model.Uf ||
+        !cidadesBaseAtual ||
+        cidadesBaseAtual.length === 0
+      )
+        return
+
+      setCidadeDropdownMode(true)
+
+      const currentIndex = model.Cidade
+        ? cidadesBaseAtual.findIndex(
+            (c) => c.toLowerCase() === model.Cidade.toLowerCase()
+          )
+        : -1
+      const startIndex = currentIndex >= 0 ? currentIndex : 0
+      setCidadePendingIndex(startIndex)
+
+      const el = document.getElementById(
+        'campo-cidade'
+      ) as HTMLSelectElement | null
+      if (el) {
+        el.selectedIndex = startIndex + 1
+        el.focus()
+        el.click()
+      }
+    }
+  }
+
+  const movePending = (isUf: boolean, delta: number) => {
+    if (isUf) {
+      if (!ufDropdownMode || ufs.length === 0) return
+      setUfPendingIndex((prev) => {
+        const count = ufs.length
+        const next = (prev + delta + count) % count
+        const el = document.getElementById(
+          'campo-uf'
+        ) as HTMLSelectElement | null
+        if (el) el.selectedIndex = next + 1
+        return next
+      })
+    } else {
+      if (
+        !cidadeDropdownMode ||
+        !cidadesBaseAtual ||
+        cidadesBaseAtual.length === 0
+      )
+        return
+      setCidadePendingIndex((prev) => {
+        const count = cidadesBaseAtual.length
+        const next = (prev + delta + count) % count
+        const el = document.getElementById(
+          'campo-cidade'
+        ) as HTMLSelectElement | null
+        if (el) el.selectedIndex = next + 1
+        return next
+      })
+    }
+  }
+
+  const commitDropdownSelection = (isUf: boolean) => {
+    if (isUf) {
+      if (!ufDropdownMode || ufs.length === 0) return
+      const ufSelecionada = ufs[ufPendingIndex]
+      handleUfChange(ufSelecionada)
+      setUfDropdownMode(false)
+    } else {
+      if (
+        !cidadeDropdownMode ||
+        !cidadesBaseAtual ||
+        cidadesBaseAtual.length === 0
+      )
+        return
+      const cidadeSelecionada = cidadesBaseAtual[cidadePendingIndex]
+      updateModel('Cidade', cidadeSelecionada)
+      setCidadeDropdownMode(false)
+    }
+  }
+
+  const handleValidateClick = () => {
+    setMensagemSucesso(null)
     setGlobalError(null)
-    setSuccessMessage(
-      'Formulário válido. Junto com a implementação de navegação por teclado.'
+
+    const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
+    if (firstInvalid !== null) {
+      setGlobalError('Preencha os campos obrigatórios antes de enviar.')
+      focusField(firstInvalid, true)
+      return
+    }
+
+    // aqui você poderia rodar validações extras (CPF, email etc.)
+    setMensagemSucesso(
+      'Formulário válido. Junto com a implementação de navegação por teclado em Next.'
     )
   }
 
@@ -548,22 +559,29 @@ export default function FormValidacaoPage() {
       <div className='w-full max-w-xl'>
         <div className='text-[11px] text-slate-500 mb-1.5'>
           <span className='text-primary font-medium'>
-            Formulário de validação com EditForm (versão Next.js)
+            Formulário de validação com EditForm (versão Next)
           </span>
         </div>
 
-        <div className='border border-slate-200 shadow-sm bg-white rounded-xl'>
-          <div className='px-4 pt-4 pb-2 border-b border-slate-200'>
+        <div className='border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl'>
+          <div className='px-4 pt-4 pb-2 border-b border-border-soft'>
             <h1 className='text-base font-semibold tracking-tight text-slate-900 text-center'>
               Validações específicas
             </h1>
             <p className='text-[11px] text-slate-500 text-center mt-1'>
-              Exemplo de formulário com navegação apenas por teclado.
+              Exemplo de uso do formulário com navegação apenas por teclado
+              (Next.js).
             </p>
           </div>
 
-          <form autoComplete='off' onSubmit={handleSubmit}>
-            <div className='px-4 pt-3 pb-3 space-y-3 h-full overflow-auto'>
+          <form
+            autoComplete='off'
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleValidateClick()
+            }}
+          >
+            <div className='px-4 pt-3 pb-3 space-y-3 h-full overflow-auto kb-scroll-container'>
               {globalError && (
                 <div className='rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700'>
                   {globalError}
@@ -583,21 +601,13 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-nome'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[0] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='Informe o nome'
-                  value={model.nome}
-                  onChange={(e) => updateModel('nome', e.target.value)}
+                  value={model.Nome}
+                  onChange={(e) => updateModel('Nome', e.target.value)}
                   onFocus={() => handleFieldFocus(0)}
                   onKeyDown={(e) => handleKeyDown(e, 0)}
                 />
-                {errors.nome && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.nome}
-                  </div>
-                )}
               </div>
 
               {/* 1 - CPF */}
@@ -608,21 +618,13 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-cpf'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[1] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='999.999.999-99'
-                  value={model.cpf}
-                  onChange={(e) => updateModel('cpf', e.target.value)}
+                  value={model.Cpf}
+                  onChange={(e) => updateModel('Cpf', e.target.value)}
                   onFocus={() => handleFieldFocus(1)}
                   onKeyDown={(e) => handleKeyDown(e, 1)}
                 />
-                {errors.cpf && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.cpf}
-                  </div>
-                )}
               </div>
 
               {/* 2 - E-mail */}
@@ -633,21 +635,13 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-email'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[2] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='email@dominio.com'
-                  value={model.email}
-                  onChange={(e) => updateModel('email', e.target.value)}
+                  value={model.Email}
+                  onChange={(e) => updateModel('Email', e.target.value)}
                   onFocus={() => handleFieldFocus(2)}
                   onKeyDown={(e) => handleKeyDown(e, 2)}
                 />
-                {errors.email && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.email}
-                  </div>
-                )}
               </div>
 
               {/* 3 - Telefone (opcional) */}
@@ -661,13 +655,10 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-telefone'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[3] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='(00) 00000-0000'
-                  value={model.telefone}
-                  onChange={(e) => updateModel('telefone', e.target.value)}
+                  value={model.Telefone}
+                  onChange={(e) => updateModel('Telefone', e.target.value)}
                   onFocus={() => handleFieldFocus(3)}
                   onKeyDown={(e) => handleKeyDown(e, 3)}
                 />
@@ -689,13 +680,10 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-logradouro'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[4] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='Rua, avenida...'
-                  value={model.logradouro}
-                  onChange={(e) => updateModel('logradouro', e.target.value)}
+                  value={model.Logradouro}
+                  onChange={(e) => updateModel('Logradouro', e.target.value)}
                   onFocus={() => handleFieldFocus(4)}
                   onKeyDown={(e) => handleKeyDown(e, 4)}
                 />
@@ -706,20 +694,24 @@ export default function FormValidacaoPage() {
                 <span className='text-xs text-slate-700'>
                   Tipo de endereço <span className='text-red-500'>*</span>
                 </span>
+
                 <div className='flex items-center gap-4 text-xs text-slate-700'>
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
-                      id='campo-tipo-end-com'
                       type='radio'
+                      id='campo-tipo-end-com'
                       name='tipo-endereco'
-                      ref={(el) => {
-                        fieldRefs.current[5] = el
+                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      value='Comercial'
+                      checked={model.TipoEndereco === 'Comercial'}
+                      onChange={() => {
+                        setTipoEnderecoFocusIndex(0)
+                        updateModel('TipoEndereco', 'Comercial')
                       }}
-                      className='h-3.5 w-3.5 border-slate-300 text-primary'
-                      checked={model.tipoEndereco === 'Comercial'}
-                      onChange={() => updateModel('tipoEndereco', 'Comercial')}
-                      onClick={() => setTipoEnderecoFocusIndex(0)}
-                      onFocus={() => handleFieldFocus(5)}
+                      onFocus={() => {
+                        setTipoEnderecoFocusIndex(0)
+                        handleFieldFocus(5)
+                      }}
                       onKeyDown={(e) => handleKeyDown(e, 5)}
                     />
                     <span className='ml-1'>Comercial</span>
@@ -727,89 +719,52 @@ export default function FormValidacaoPage() {
 
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
-                      id='campo-tipo-end-emp'
                       type='radio'
+                      id='campo-tipo-end-emp'
                       name='tipo-endereco'
-                      className='h-3.5 w-3.5 border-slate-300 text-primary'
-                      checked={model.tipoEndereco === 'Empresarial'}
-                      onChange={() =>
-                        updateModel('tipoEndereco', 'Empresarial')
-                      }
-                      onClick={() => setTipoEnderecoFocusIndex(1)}
-                      onFocus={() => handleFieldFocus(5)}
+                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      value='Empresarial'
+                      checked={model.TipoEndereco === 'Empresarial'}
+                      onChange={() => {
+                        setTipoEnderecoFocusIndex(1)
+                        updateModel('TipoEndereco', 'Empresarial')
+                      }}
+                      onFocus={() => {
+                        setTipoEnderecoFocusIndex(1)
+                        handleFieldFocus(5)
+                      }}
                       onKeyDown={(e) => handleKeyDown(e, 5)}
                     />
                     <span className='ml-1'>Empresarial</span>
                   </label>
                 </div>
-                {errors.tipoEndereco && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.tipoEndereco}
-                  </div>
-                )}
               </div>
 
-              {/* 6 - UF (input + dropdown filtrado) */}
+              {/* 6 - UF (select nativo) */}
               <div className='space-y-1'>
                 <label className='text-xs text-slate-700' htmlFor='campo-uf'>
                   UF
                 </label>
-                <div className='relative'>
-                  <input
-                    id='campo-uf'
-                    autoComplete='off'
-                    ref={(el) => {
-                      fieldRefs.current[6] = el
-                    }}
-                    value={model.uf}
-                    placeholder='UF'
-                    className='h-9 w-full rounded-md border border-slate-200 px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
-                    onChange={handleUfInput}
-                    onFocus={() => handleFieldFocus(6)}
-                    onKeyDown={(e) => handleKeyDown(e, 6)}
-                  />
-                  <button
-                    type='button'
-                    tabIndex={-1}
-                    className='absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400'
-                    onClick={toggleUfDropdown}
-                  >
-                    ▼
-                  </button>
 
-                  {ufDropdownOpen && (
-                    <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-md text-xs'>
-                      {getUfsFiltradas(model.uf).map((uf, index) => {
-                        const focused = ufFocusedIndex === index
-                        return (
-                          <div
-                            key={uf}
-                            className={
-                              'px-2 py-1 cursor-pointer ' +
-                              (focused
-                                ? 'bg-primary text-white'
-                                : 'hover:bg-slate-100')
-                            }
-                            onMouseDown={(e) => {
-                              e.preventDefault()
-                              selectUf(uf)
-                            }}
-                          >
-                            {uf}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-                {errors.uf && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.uf}
-                  </div>
-                )}
+                <select
+                  id='campo-uf'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  value={model.Uf}
+                  disabled={!canUseField(model, 6)}
+                  onChange={(e) => handleUfChange(e.target.value)}
+                  onFocus={() => handleFieldFocus(6)}
+                  onKeyDown={(e) => handleSelectKeyDown(e, 6)}
+                >
+                  <option value=''>Selecione...</option>
+                  {ufs.map((uf) => (
+                    <option key={uf} value={uf}>
+                      {uf}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* 7 - Cidade (input + dropdown filtrado) */}
+              {/* 7 - Cidade (select nativo) */}
               <div className='space-y-1'>
                 <label
                   className='text-xs text-slate-700'
@@ -817,64 +772,26 @@ export default function FormValidacaoPage() {
                 >
                   Cidade
                 </label>
-                <div className='relative'>
-                  <input
-                    id='campo-cidade'
-                    autoComplete='off'
-                    ref={(el) => {
-                      fieldRefs.current[7] = el
-                    }}
-                    value={model.cidade}
-                    placeholder='Cidade'
-                    className='h-9 w-full rounded-md border border-slate-200 px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
-                    onChange={handleCidadeInput}
-                    onFocus={() => handleFieldFocus(7)}
-                    onKeyDown={(e) => handleKeyDown(e, 7)}
-                  />
-                  <button
-                    type='button'
-                    tabIndex={-1}
-                    className='absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400'
-                    onClick={toggleCidadeDropdown}
-                  >
-                    ▼
-                  </button>
 
-                  {cidadeDropdownOpen && (
-                    <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-md text-xs'>
-                      {getCidadesFiltradas(cidadesBaseAtual, model.cidade).map(
-                        (cidade, index) => {
-                          const focused = cidadeFocusedIndex === index
-                          return (
-                            <div
-                              key={cidade}
-                              className={
-                                'px-2 py-1 cursor-pointer ' +
-                                (focused
-                                  ? 'bg-primary text-white'
-                                  : 'hover:bg-slate-100')
-                              }
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                selectCidade(cidade)
-                              }}
-                            >
-                              {cidade}
-                            </div>
-                          )
-                        }
-                      )}
-                    </div>
-                  )}
-                </div>
-                {errors.cidade && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.cidade}
-                  </div>
-                )}
+                <select
+                  id='campo-cidade'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-50 disabled:text-slate-400'
+                  value={model.Cidade}
+                  disabled={!canUseField(model, 7) || !model.Uf}
+                  onChange={(e) => updateModel('Cidade', e.target.value)}
+                  onFocus={() => handleFieldFocus(7)}
+                  onKeyDown={(e) => handleSelectKeyDown(e, 7)}
+                >
+                  <option value=''>Selecione...</option>
+                  {cidadesBaseAtual.map((cidade) => (
+                    <option key={cidade} value={cidade}>
+                      {cidade}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* 8 - Tipo de via (checkboxes) */}
+              {/* 8 - Tipo de via */}
               <div className='space-y-1'>
                 <span className='text-xs text-slate-700'>
                   Tipo de via <span className='text-red-500'>*</span>
@@ -884,13 +801,10 @@ export default function FormValidacaoPage() {
                     <input
                       id='campo-tipo-via-rua'
                       type='checkbox'
-                      ref={(el) => {
-                        fieldRefs.current[8] = el
-                      }}
-                      className='h-3.5 w-3.5 border-slate-300 text-primary'
-                      checked={model.tipoViaRua}
+                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      checked={model.TipoViaRua}
                       onChange={(e) =>
-                        updateModel('tipoViaRua', e.target.checked)
+                        updateModel('TipoViaRua', e.target.checked)
                       }
                       onFocus={() => handleFieldFocus(8)}
                       onKeyDown={(e) => handleKeyDown(e, 8)}
@@ -902,10 +816,10 @@ export default function FormValidacaoPage() {
                     <input
                       id='campo-tipo-via-av'
                       type='checkbox'
-                      className='h-3.5 w-3.5 border-slate-300 text-primary'
-                      checked={model.tipoViaAvenida}
+                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      checked={model.TipoViaAvenida}
                       onChange={(e) =>
-                        updateModel('tipoViaAvenida', e.target.checked)
+                        updateModel('TipoViaAvenida', e.target.checked)
                       }
                       onFocus={() => handleFieldFocus(8)}
                       onKeyDown={(e) => handleKeyDown(e, 8)}
@@ -917,10 +831,10 @@ export default function FormValidacaoPage() {
                     <input
                       id='campo-tipo-via-log'
                       type='checkbox'
-                      className='h-3.5 w-3.5 border-slate-300 text-primary'
-                      checked={model.tipoViaLogradouro}
+                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      checked={model.TipoViaLogradouro}
                       onChange={(e) =>
-                        updateModel('tipoViaLogradouro', e.target.checked)
+                        updateModel('TipoViaLogradouro', e.target.checked)
                       }
                       onFocus={() => handleFieldFocus(8)}
                       onKeyDown={(e) => handleKeyDown(e, 8)}
@@ -928,11 +842,6 @@ export default function FormValidacaoPage() {
                     <span className='ml-1'>Logradouro</span>
                   </label>
                 </div>
-                {errors.tipoViaDummy && (
-                  <div className='text-[10px] text-red-500 mt-0.5'>
-                    {errors.tipoViaDummy}
-                  </div>
-                )}
               </div>
 
               {/* 9 - Descrição da via */}
@@ -946,13 +855,10 @@ export default function FormValidacaoPage() {
                 <input
                   id='campo-desc-via'
                   autoComplete='off'
-                  ref={(el) => {
-                    fieldRefs.current[9] = el
-                  }}
-                  className='h-9 w-full rounded-md border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
                   placeholder='Ex.: Rua das Flores, Av. Paulista...'
-                  value={model.descricaoVia}
-                  onChange={(e) => updateModel('descricaoVia', e.target.value)}
+                  value={model.DescricaoVia}
+                  onChange={(e) => updateModel('DescricaoVia', e.target.value)}
                   onFocus={() => handleFieldFocus(9)}
                   onKeyDown={(e) => handleKeyDown(e, 9)}
                 />
@@ -967,9 +873,9 @@ export default function FormValidacaoPage() {
                 </button>
               </div>
 
-              {successMessage && (
+              {mensagemSucesso && (
                 <div className='mt-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2'>
-                  {successMessage}
+                  {mensagemSucesso}
                 </div>
               )}
             </div>
@@ -978,4 +884,32 @@ export default function FormValidacaoPage() {
       </div>
     </div>
   )
+}
+
+// helper simples equivalente ao keyboardForm.focusById
+function focusById(id: string, center: boolean) {
+  const el = document.getElementById(id)
+  if (!el) return
+  try {
+    ;(el as any).focus({ preventScroll: true })
+  } catch {
+    ;(el as HTMLElement).focus()
+  }
+  const container = el.closest('.kb-scroll-container') as HTMLElement | null
+  if (!container) return
+
+  const padding = 16
+  const cRect = container.getBoundingClientRect()
+  const eRect = el.getBoundingClientRect()
+
+  if (center) {
+    const target = eRect.top - cRect.top - (cRect.height / 2 - eRect.height / 2)
+    container.scrollTop += target
+  } else {
+    if (eRect.top < cRect.top + padding) {
+      container.scrollTop += eRect.top - (cRect.top + padding)
+    } else if (eRect.bottom > cRect.bottom - padding) {
+      container.scrollTop += eRect.bottom - (cRect.bottom - padding)
+    }
+  }
 }
