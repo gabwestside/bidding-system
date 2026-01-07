@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import React, { useEffect, useState, KeyboardEvent } from 'react'
+import { KeyboardSelect } from '@/components/keyboard-select'
+import { KeyboardEvent, useEffect, useState } from 'react'
 
 const TOTAL_FIELDS = 10
 const PAGE_SIZE = 4
@@ -65,7 +66,8 @@ type FormValidacaoModel = {
   DescricaoVia: string
 }
 
-// stub simples só para exemplo
+const ufOptions = ufs.map((uf) => ({ value: uf, label: uf }))
+
 function getCidadesPorUf(uf: string): string[] {
   switch (uf) {
     case 'SP':
@@ -193,13 +195,7 @@ export default function FormValidacaoPage() {
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
   const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
-
-  // estados do "dropdown lógico"
-  const [ufDropdownMode, setUfDropdownMode] = useState(false)
-  const [ufPendingIndex, setUfPendingIndex] = useState(0)
-  const [cidadeDropdownMode, setCidadeDropdownMode] = useState(false)
-  const [cidadePendingIndex, setCidadePendingIndex] = useState(0)
-
+  
   useEffect(() => {
     focusField(0, true)
   }, [])
@@ -353,190 +349,6 @@ export default function FormValidacaoPage() {
     }
   }
 
-  const handleSelectKeyDown = (
-    e: KeyboardEvent<HTMLSelectElement>,
-    index: number
-  ) => {
-    if (!canUseField(model, index)) {
-      e.preventDefault()
-      const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
-      if (firstInvalid !== null) {
-        focusField(firstInvalid, true)
-      }
-      return
-    }
-
-    const isUf = index === 6
-    const dropdownMode = isUf ? ufDropdownMode : cidadeDropdownMode
-
-    // F4 / Space = abrir "dropdown lógico" ou confirmar (Space)
-    if (e.key === 'F4' || e.key === ' ') {
-      e.preventDefault()
-      if (!dropdownMode) {
-        enterDropdownMode(isUf)
-      } else if (e.key === ' ') {
-        commitDropdownSelection(isUf)
-      }
-      return
-    }
-
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      if (dropdownMode) {
-        if (isUf) setUfDropdownMode(false)
-        else setCidadeDropdownMode(false)
-      }
-      return
-    }
-
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      if (dropdownMode) {
-        const delta = e.key === 'ArrowDown' ? 1 : -1
-        movePending(isUf, delta)
-      } else {
-        const targetIndex =
-          e.key === 'ArrowDown'
-            ? Math.min(TOTAL_FIELDS - 1, index + 1)
-            : Math.max(0, index - 1)
-
-        if (e.key === 'ArrowDown') {
-          const result = canLeaveField(model, index)
-          if (!result.ok) {
-            if (result.message) setGlobalError(result.message)
-            return
-          }
-        }
-
-        focusField(targetIndex)
-      }
-      return
-    }
-
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      e.preventDefault()
-      if (dropdownMode) {
-        const delta = e.key === 'ArrowRight' ? 1 : -1
-        movePending(isUf, delta)
-      }
-      return
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      if (dropdownMode) {
-        // fecha o modo, mas NÃO confirma (Space que confirma)
-        if (isUf) setUfDropdownMode(false)
-        else setCidadeDropdownMode(false)
-      }
-
-      const { ok, message } = canLeaveField(model, index)
-      if (!ok) {
-        if (message) setGlobalError(message)
-        return
-      }
-
-      const nextIndex = Math.min(TOTAL_FIELDS - 1, index + 1)
-      focusField(nextIndex)
-      return
-    }
-  }
-
-  const enterDropdownMode = (isUf: boolean) => {
-    if (isUf) {
-      if (!canUseField(model, 6) || ufs.length === 0) return
-      setUfDropdownMode(true)
-
-      const currentIndex = model.Uf ? ufs.indexOf(model.Uf) : -1
-      const startIndex = currentIndex >= 0 ? currentIndex : 0
-      setUfPendingIndex(startIndex)
-
-      const el = document.getElementById('campo-uf') as HTMLSelectElement | null
-      if (el) {
-        el.selectedIndex = startIndex + 1 // +1 por causa da opção "Selecione..."
-        el.focus()
-        el.click() // tentativa de abrir o dropdown nativo
-      }
-    } else {
-      if (
-        !canUseField(model, 7) ||
-        !model.Uf ||
-        !cidadesBaseAtual ||
-        cidadesBaseAtual.length === 0
-      )
-        return
-
-      setCidadeDropdownMode(true)
-
-      const currentIndex = model.Cidade
-        ? cidadesBaseAtual.findIndex(
-            (c) => c.toLowerCase() === model.Cidade.toLowerCase()
-          )
-        : -1
-      const startIndex = currentIndex >= 0 ? currentIndex : 0
-      setCidadePendingIndex(startIndex)
-
-      const el = document.getElementById(
-        'campo-cidade'
-      ) as HTMLSelectElement | null
-      if (el) {
-        el.selectedIndex = startIndex + 1
-        el.focus()
-        el.click()
-      }
-    }
-  }
-
-  const movePending = (isUf: boolean, delta: number) => {
-    if (isUf) {
-      if (!ufDropdownMode || ufs.length === 0) return
-      setUfPendingIndex((prev) => {
-        const count = ufs.length
-        const next = (prev + delta + count) % count
-        const el = document.getElementById(
-          'campo-uf'
-        ) as HTMLSelectElement | null
-        if (el) el.selectedIndex = next + 1
-        return next
-      })
-    } else {
-      if (
-        !cidadeDropdownMode ||
-        !cidadesBaseAtual ||
-        cidadesBaseAtual.length === 0
-      )
-        return
-      setCidadePendingIndex((prev) => {
-        const count = cidadesBaseAtual.length
-        const next = (prev + delta + count) % count
-        const el = document.getElementById(
-          'campo-cidade'
-        ) as HTMLSelectElement | null
-        if (el) el.selectedIndex = next + 1
-        return next
-      })
-    }
-  }
-
-  const commitDropdownSelection = (isUf: boolean) => {
-    if (isUf) {
-      if (!ufDropdownMode || ufs.length === 0) return
-      const ufSelecionada = ufs[ufPendingIndex]
-      handleUfChange(ufSelecionada)
-      setUfDropdownMode(false)
-    } else {
-      if (
-        !cidadeDropdownMode ||
-        !cidadesBaseAtual ||
-        cidadesBaseAtual.length === 0
-      )
-        return
-      const cidadeSelecionada = cidadesBaseAtual[cidadePendingIndex]
-      updateModel('Cidade', cidadeSelecionada)
-      setCidadeDropdownMode(false)
-    }
-  }
-
   const handleValidateClick = () => {
     setMensagemSucesso(null)
     setGlobalError(null)
@@ -553,6 +365,21 @@ export default function FormValidacaoPage() {
       'Formulário válido. Junto com a implementação de navegação por teclado em Next.'
     )
   }
+
+  const handleMoveFromField = (
+    fromIndex: number,
+    direction: 'prev' | 'next'
+  ) => {
+    const targetIndex =
+      direction === 'next'
+        ? Math.min(TOTAL_FIELDS - 1, fromIndex + 1)
+        : Math.max(0, fromIndex - 1)
+
+    // aqui você pode aplicar as mesmas regras de CanLeaveField/GetFirstInvalid, se quiser
+    focusField(targetIndex)
+  }
+
+  const cidadeOptions = cidadesBaseAtual.map((c) => ({ value: c, label: c }))
 
   return (
     <div className='min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8'>
@@ -740,55 +567,32 @@ export default function FormValidacaoPage() {
                 </div>
               </div>
 
-              {/* 6 - UF (select nativo) */}
+              {/* 6 - UF */}
               <div className='space-y-1'>
-                <label className='text-xs text-slate-700' htmlFor='campo-uf'>
-                  UF
-                </label>
-
-                <select
+                <KeyboardSelect
                   id='campo-uf'
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  label='UF'
                   value={model.Uf}
+                  options={ufOptions}
                   disabled={!canUseField(model, 6)}
-                  onChange={(e) => handleUfChange(e.target.value)}
-                  onFocus={() => handleFieldFocus(6)}
-                  onKeyDown={(e) => handleSelectKeyDown(e, 6)}
-                >
-                  <option value=''>Selecione...</option>
-                  {ufs.map((uf) => (
-                    <option key={uf} value={uf}>
-                      {uf}
-                    </option>
-                  ))}
-                </select>
+                  placeholder='Selecione...'
+                  onChange={(v) => handleUfChange(v)}
+                  onMoveField={(direction) => handleMoveFromField(6, direction)}
+                />
               </div>
 
-              {/* 7 - Cidade (select nativo) */}
+              {/* 7 - Cidade */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-cidade'
-                >
-                  Cidade
-                </label>
-
-                <select
+                <KeyboardSelect
                   id='campo-cidade'
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-50 disabled:text-slate-400'
+                  label='Cidade'
                   value={model.Cidade}
+                  options={cidadeOptions}
                   disabled={!canUseField(model, 7) || !model.Uf}
-                  onChange={(e) => updateModel('Cidade', e.target.value)}
-                  onFocus={() => handleFieldFocus(7)}
-                  onKeyDown={(e) => handleSelectKeyDown(e, 7)}
-                >
-                  <option value=''>Selecione...</option>
-                  {cidadesBaseAtual.map((cidade) => (
-                    <option key={cidade} value={cidade}>
-                      {cidade}
-                    </option>
-                  ))}
-                </select>
+                  placeholder='Selecione...'
+                  onChange={(v) => updateModel('Cidade', v)}
+                  onMoveField={(direction) => handleMoveFromField(7, direction)}
+                />
               </div>
 
               {/* 8 - Tipo de via */}
