@@ -1,201 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { KeyboardSelect } from '@/components/keyboard-select'
-import { KeyboardEvent, useEffect, useState } from 'react'
-
-const TOTAL_FIELDS = 10
-const PAGE_SIZE = 4
-
-const fieldIds = [
-  'campo-nome',
-  'campo-cpf',
-  'campo-email',
-  'campo-telefone',
-  'campo-logradouro',
-  'campo-tipo-end-com',
-  'campo-uf',
-  'campo-cidade',
-  'campo-tipo-via-rua',
-  'campo-desc-via',
-] as const
-
-const ufs = [
-  'AC',
-  'AL',
-  'AP',
-  'AM',
-  'BA',
-  'CE',
-  'DF',
-  'ES',
-  'GO',
-  'MA',
-  'MT',
-  'MS',
-  'MG',
-  'PA',
-  'PB',
-  'PR',
-  'PE',
-  'PI',
-  'RJ',
-  'RN',
-  'RS',
-  'RO',
-  'RR',
-  'SC',
-  'SP',
-  'SE',
-  'TO',
-]
-
-type FormValidacaoModel = {
-  Nome: string
-  Cpf: string
-  Email: string
-  Telefone: string
-  Logradouro: string
-  TipoEndereco: string
-  Uf: string
-  Cidade: string
-  TipoViaRua: boolean
-  TipoViaAvenida: boolean
-  TipoViaLogradouro: boolean
-  TipoViaDummy: boolean
-  DescricaoVia: string
-}
-
-const ufOptions = ufs.map((uf) => ({ value: uf, label: uf }))
-
-function getCidadesPorUf(uf: string): string[] {
-  switch (uf) {
-    case 'SP':
-      return ['São Paulo', 'Campinas', 'Santos']
-    case 'RJ':
-      return ['Rio de Janeiro', 'Niterói']
-    case 'CE':
-      return ['Fortaleza', 'Sobral']
-    default:
-      return []
-  }
-}
-
-function getFirstInvalidRequiredFieldIndex(
-  model: FormValidacaoModel
-): number | null {
-  if (!model.Nome.trim()) return 0
-  if (!model.Cpf.trim()) return 1
-  if (!model.Email.trim()) return 2
-  if (!model.TipoEndereco.trim()) return 5
-  if (!model.TipoViaRua && !model.TipoViaAvenida && !model.TipoViaLogradouro)
-    return 8
-  return null
-}
-
-function canLeaveField(
-  model: FormValidacaoModel,
-  index: number
-): { ok: boolean; message?: string } {
-  switch (index) {
-    case 0:
-      if (!model.Nome.trim())
-        return { ok: false, message: 'Preencha o nome antes de continuar.' }
-      break
-    case 1:
-      if (!model.Cpf.trim())
-        return { ok: false, message: 'Preencha o CPF antes de continuar.' }
-      break
-    case 2:
-      if (!model.Email.trim())
-        return { ok: false, message: 'Preencha o e-mail antes de continuar.' }
-      break
-    case 5:
-      if (!model.TipoEndereco.trim())
-        return {
-          ok: false,
-          message: 'Informe o tipo de endereço antes de continuar.',
-        }
-      break
-    case 8:
-      if (
-        !model.TipoViaRua &&
-        !model.TipoViaAvenida &&
-        !model.TipoViaLogradouro
-      ) {
-        return {
-          ok: false,
-          message: 'Selecione pelo menos um tipo de via antes de continuar.',
-        }
-      }
-      break
-  }
-  return { ok: true }
-}
-
-function canUseField(model: FormValidacaoModel, index: number): boolean {
-  const firstInvalid = getFirstInvalidRequiredFieldIndex(model)
-  return !(firstInvalid !== null && firstInvalid < index)
-}
-
-function focusField(index: number, center = false) {
-  if (index < 0 || index >= TOTAL_FIELDS) return
-  const id = fieldIds[index]
-  const el = document.getElementById(id) as HTMLElement | null
-  if (!el) return
-
-  try {
-    ;(el as any).focus({ preventScroll: true })
-  } catch {
-    el.focus()
-  }
-
-  const container = el.closest('.kb-scroll-container') as HTMLElement | null
-  if (!container) {
-    if (center) el.scrollIntoView({ block: 'center' })
-    else el.scrollIntoView({ block: 'nearest' })
-    return
-  }
-
-  const padding = 16
-  const cRect = container.getBoundingClientRect()
-  const eRect = el.getBoundingClientRect()
-
-  if (center) {
-    const target = eRect.top - cRect.top - (cRect.height / 2 - eRect.height / 2)
-    container.scrollTop += target
-  } else {
-    if (eRect.top < cRect.top + padding) {
-      container.scrollTop += eRect.top - (cRect.top + padding)
-    } else if (eRect.bottom > cRect.bottom - padding) {
-      container.scrollTop += eRect.bottom - (cRect.bottom - padding)
-    }
-  }
-}
-
-const initialModel: FormValidacaoModel = {
-  Nome: '',
-  Cpf: '',
-  Email: '',
-  Telefone: '',
-  Logradouro: '',
-  TipoEndereco: '',
-  Uf: '',
-  Cidade: '',
-  TipoViaRua: false,
-  TipoViaAvenida: false,
-  TipoViaLogradouro: false,
-  TipoViaDummy: false,
-  DescricaoVia: '',
-}
+import { focusField, FormModel, INITIAL_MODEL } from '@/lib/service'
+import { UFS } from '@/lib/utils'
+import { KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
 export default function FormValidacaoPage() {
-  const [model, setModel] = useState<FormValidacaoModel>(initialModel)
+  const [model, setModel] = useState<FormModel>(INITIAL_MODEL)
   const [cidadesBaseAtual, setCidadesBaseAtual] = useState<string[]>([])
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
   const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
-  
+
+  const handleMoveFromField = (index: number, direction: 'prev' | 'next') => {
+    // aqui você faz o foco para o próximo campo, se quiser,
+    // usando refs ou alguma lib de foco. Mantive simples para focar no select.
+    console.log('mover do campo', index, 'para', direction)
+  }
+
+  const ufOptions: Option[] = useMemo(
+    () => UFS.map((uf) => ({ value: uf, label: uf })),
+    []
+  )
+
+  const cidadeOptions: Option[] = useMemo(() => {
+    if (!model.Uf) return []
+    const lista = MUNICIPIOS_POR_UF[model.Uf] ?? []
+    return lista.map((cidade: any) => ({
+      value: cidade, // IMPORTANTE: value preenchido
+      label: cidade,
+    }))
+  }, [model.Uf])
+
   useEffect(() => {
     focusField(0, true)
   }, [])
@@ -212,7 +48,7 @@ export default function FormValidacaoPage() {
     }
   }
 
-  const updateModel = <K extends keyof FormValidacaoModel>(
+  const updateModel = <K extends keyof FormModel>(
     field: K,
     value: FormValidacaoModel[K]
   ) => {
@@ -366,20 +202,20 @@ export default function FormValidacaoPage() {
     )
   }
 
-  const handleMoveFromField = (
-    fromIndex: number,
-    direction: 'prev' | 'next'
-  ) => {
-    const targetIndex =
-      direction === 'next'
-        ? Math.min(TOTAL_FIELDS - 1, fromIndex + 1)
-        : Math.max(0, fromIndex - 1)
+  // const handleMoveFromField = (
+  //   fromIndex: number,
+  //   direction: 'prev' | 'next'
+  // ) => {
+  //   const targetIndex =
+  //     direction === 'next'
+  //       ? Math.min(TOTAL_FIELDS - 1, fromIndex + 1)
+  //       : Math.max(0, fromIndex - 1)
 
-    // aqui você pode aplicar as mesmas regras de CanLeaveField/GetFirstInvalid, se quiser
-    focusField(targetIndex)
-  }
+  //   // aqui você pode aplicar as mesmas regras de CanLeaveField/GetFirstInvalid, se quiser
+  //   focusField(targetIndex)
+  // }
 
-  const cidadeOptions = cidadesBaseAtual.map((c) => ({ value: c, label: c }))
+  // const cidadeOptions = cidadesBaseAtual.map((c) => ({ value: c, label: c }))
 
   return (
     <div className='min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8'>
