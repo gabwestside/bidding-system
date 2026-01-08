@@ -1,8 +1,24 @@
 'use client'
 
 import { KeyboardSelect } from '@/components/keyboard-select'
-import { focusField, FormModel, INITIAL_MODEL } from '@/lib/service'
-import { UFS } from '@/lib/utils'
+import {
+  canLeaveField,
+  canUseField,
+  focusField,
+  FormModel,
+  getFirstInvalidRequiredFieldIndex,
+  INITIAL_MODEL,
+  PAGE_SIZE,
+  TOTAL_FIELDS,
+} from '@/lib/service'
+import {
+  Cidade,
+  focusById,
+  getCidadesPorUf,
+  MUNICIPIOS_POR_UF,
+  Option,
+  UFS,
+} from '@/lib/utils'
 import { KeyboardEvent, useEffect, useMemo, useState } from 'react'
 
 export default function FormValidacaoPage() {
@@ -13,8 +29,7 @@ export default function FormValidacaoPage() {
   const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
 
   const handleMoveFromField = (index: number, direction: 'prev' | 'next') => {
-    // aqui você faz o foco para o próximo campo, se quiser,
-    // usando refs ou alguma lib de foco. Mantive simples para focar no select.
+    // aqui você pode reaproveitar a mesma lógica de navegação por índice
     console.log('mover do campo', index, 'para', direction)
   }
 
@@ -23,12 +38,20 @@ export default function FormValidacaoPage() {
     []
   )
 
+  // opções de cidade baseadas no UF selecionado
   const cidadeOptions: Option[] = useMemo(() => {
     if (!model.Uf) return []
-    const lista = MUNICIPIOS_POR_UF[model.Uf] ?? []
-    return lista.map((cidade: any) => ({
-      value: cidade, // IMPORTANTE: value preenchido
-      label: cidade,
+
+    const lista =
+      (MUNICIPIOS_POR_UF[model.Uf as keyof typeof MUNICIPIOS_POR_UF] as unknown as
+        | Cidade[]
+        | undefined) ?? []
+
+    if (!Array.isArray(lista)) return []
+
+    return lista.map((cidade) => ({
+      value: cidade.nomeCidade, // value = nome da cidade
+      label: cidade.nomeCidade, // label exibido
     }))
   }, [model.Uf])
 
@@ -50,7 +73,7 @@ export default function FormValidacaoPage() {
 
   const updateModel = <K extends keyof FormModel>(
     field: K,
-    value: FormValidacaoModel[K]
+    value: FormModel[K]
   ) => {
     setModel((prev) => {
       const next = { ...prev, [field]: value }
@@ -77,7 +100,7 @@ export default function FormValidacaoPage() {
     setModel((prev) => ({
       ...prev,
       Uf: value,
-      Cidade: '',
+      Cidade: '', // sempre limpa cidade ao trocar UF
     }))
     setCidadesBaseAtual(getCidadesPorUf(value))
   }
@@ -196,26 +219,10 @@ export default function FormValidacaoPage() {
       return
     }
 
-    // aqui você poderia rodar validações extras (CPF, email etc.)
     setMensagemSucesso(
       'Formulário válido. Junto com a implementação de navegação por teclado em Next.'
     )
   }
-
-  // const handleMoveFromField = (
-  //   fromIndex: number,
-  //   direction: 'prev' | 'next'
-  // ) => {
-  //   const targetIndex =
-  //     direction === 'next'
-  //       ? Math.min(TOTAL_FIELDS - 1, fromIndex + 1)
-  //       : Math.max(0, fromIndex - 1)
-
-  //   // aqui você pode aplicar as mesmas regras de CanLeaveField/GetFirstInvalid, se quiser
-  //   focusField(targetIndex)
-  // }
-
-  // const cidadeOptions = cidadesBaseAtual.map((c) => ({ value: c, label: c }))
 
   return (
     <div className='min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8'>
@@ -424,8 +431,14 @@ export default function FormValidacaoPage() {
                   label='Cidade'
                   value={model.Cidade}
                   options={cidadeOptions}
-                  disabled={!canUseField(model, 7) || !model.Uf}
-                  placeholder='Selecione...'
+                  disabled={
+                    !canUseField(model, 7) ||
+                    !model.Uf ||
+                    cidadeOptions.length === 0
+                  }
+                  placeholder={
+                    model.Uf ? 'Selecione...' : 'Selecione antes a UF'
+                  }
                   onChange={(v) => updateModel('Cidade', v)}
                   onMoveField={(direction) => handleMoveFromField(7, direction)}
                 />
@@ -524,32 +537,4 @@ export default function FormValidacaoPage() {
       </div>
     </div>
   )
-}
-
-// helper simples equivalente ao keyboardForm.focusById
-function focusById(id: string, center: boolean) {
-  const el = document.getElementById(id)
-  if (!el) return
-  try {
-    ;(el as any).focus({ preventScroll: true })
-  } catch {
-    ;(el as HTMLElement).focus()
-  }
-  const container = el.closest('.kb-scroll-container') as HTMLElement | null
-  if (!container) return
-
-  const padding = 16
-  const cRect = container.getBoundingClientRect()
-  const eRect = el.getBoundingClientRect()
-
-  if (center) {
-    const target = eRect.top - cRect.top - (cRect.height / 2 - eRect.height / 2)
-    container.scrollTop += target
-  } else {
-    if (eRect.top < cRect.top + padding) {
-      container.scrollTop += eRect.top - (cRect.top + padding)
-    } else if (eRect.bottom > cRect.bottom - padding) {
-      container.scrollTop += eRect.bottom - (cRect.bottom - padding)
-    }
-  }
 }

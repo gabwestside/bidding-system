@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { obterMunicipiosPorUf } from './service'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -320,3 +321,55 @@ export const UFS = [
   'SE',
   'TO',
 ]
+
+export const MUNICIPIOS_POR_UF = UFS.map((uf) => obterMunicipiosPorUf(uf))
+
+export function focusById(id: string, center: boolean) {
+  const el = document.getElementById(id)
+  if (!el) return
+  try {
+    ;(el as HTMLElement).focus({ preventScroll: true })
+  } catch {
+    el.focus()
+  }
+  const container = el.closest('.kb-scroll-container') as HTMLElement | null
+  if (!container) return
+
+  const padding = 16
+  const cRect = container.getBoundingClientRect()
+  const eRect = el.getBoundingClientRect()
+
+  if (center) {
+    const target = eRect.top - cRect.top - (cRect.height / 2 - eRect.height / 2)
+    container.scrollTop += target
+  } else {
+    if (eRect.top < cRect.top + padding) {
+      container.scrollTop += eRect.top - (cRect.top + padding)
+    } else if (eRect.bottom > cRect.bottom - padding) {
+      container.scrollTop += eRect.bottom - (cRect.bottom - padding)
+    }
+  }
+}
+
+export function getCidadesPorUf(uf: string): string[] {
+  if (!uf) return []
+
+  const lista =
+    (MUNICIPIOS_POR_UF[uf as keyof typeof MUNICIPIOS_POR_UF] as unknown as
+      | Cidade[]
+      | undefined) ?? []
+
+  if (!Array.isArray(lista)) return []
+
+  return lista.map((c) => c.nomeCidade)
+}
+
+export type Option = {
+  value: string
+  label: string
+}
+
+export type Cidade = {
+  id_cidade: number
+  nomeCidade: string
+}

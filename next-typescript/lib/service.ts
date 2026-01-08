@@ -1,4 +1,4 @@
-import estadosRoot from '@/data/estados-cidades.json';
+import estadosRoot from '@/data/estados-cidades.json'
 
 type Cidade = { nomeCidade: string }
 type Estado = { sigla: string; cidades: Cidade[] }
@@ -63,6 +63,7 @@ export type FormModel = {
   TipoViaAvenida: boolean
   TipoViaLogradouro: boolean
   DescricaoVia: string
+  TipoViaDummy: boolean
 }
 
 export const INITIAL_MODEL: FormModel = {
@@ -78,6 +79,7 @@ export const INITIAL_MODEL: FormModel = {
   TipoViaAvenida: false,
   TipoViaLogradouro: false,
   DescricaoVia: '',
+  TipoViaDummy: false,
 }
 
 export function getFirstInvalidRequiredFieldIndex(
