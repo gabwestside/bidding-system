@@ -80,7 +80,7 @@ export default function HomePage() {
           </p>
 
           <div className='flex flex-wrap items-center gap-3 pt-1'>
-            <Button
+            {/* <Button
               asChild
               className='bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5'
             >
@@ -93,7 +93,7 @@ export default function HomePage() {
               className='border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70'
             >
               <Link href='/processos'>Ver processos abertos</Link>
-            </Button>
+            </Button> */}
 
             <Button
               asChild
@@ -109,6 +109,14 @@ export default function HomePage() {
               className='border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70'
             >
               <Link href='/form-validacao'>Formulário de Validação</Link>
+            </Button>
+
+                        <Button
+              asChild
+              variant='outline'
+              className='border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70'
+            >
+              <Link href='/form-simplificado'>Formulário Simplificado</Link>
             </Button>
 
             <p className='text-[11px] md:text-xs text-slate-500'>
