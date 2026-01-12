@@ -1,25 +1,43 @@
 'use client'
 
-import React, {
+import {
+  ChangeEvent,
   KeyboardEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
+import { MUNICIPIOS_POR_UF } from '@/lib/utils' // ajuste o import conforme seu projeto
 
-// ====== MODELO / TIPOS ======
-type FormSimplificadoModel = {
+// ---------- Modelo e índices de campos ----------
+
+enum FieldIndex {
+  Nome = 0,
+  Cpf = 1,
+  Email = 2,
+  Telefone = 3,
+  Logradouro = 4,
+  TipoEndereco = 5,
+  Uf = 6,
+  Cidade = 7,
+  TipoVia = 8,
+  DescricaoVia = 9,
+}
+
+interface FormSimplificadoModel {
   Nome: string
   Cpf: string
   Email: string
   Telefone: string
   Logradouro: string
-  TipoEndereco: string
+  TipoEndereco: '' | 'Comercial' | 'Empresarial'
   Uf: string
   Cidade: string
   TipoViaRua: boolean
   TipoViaAvenida: boolean
   TipoViaLogradouro: boolean
+  TipoViaDummy: boolean // usado para validação
   DescricaoVia: string
 }
 
@@ -35,392 +53,361 @@ const INITIAL_MODEL: FormSimplificadoModel = {
   TipoViaRua: false,
   TipoViaAvenida: false,
   TipoViaLogradouro: false,
+  TipoViaDummy: false,
   DescricaoVia: '',
 }
 
 const TOTAL_FIELDS = 10
 const PAGE_SIZE = 8
 
-const IdxNome = 0
-const IdxCpf = 1
-const IdxEmail = 2
-const IdxTelefone = 3
-const IdxLogradouro = 4
-const IdxTipoEndereco = 5
-const IdxUf = 6
-const IdxCidade = 7
-const IdxTipoVia = 8
-const IdxDescricaoVia = 9
-
-// UFs
 const UFS = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+  'AC',
+  'AL',
+  'AP',
+  'AM',
+  'BA',
+  'CE',
+  'DF',
+  'ES',
+  'GO',
+  'MA',
+  'MT',
+  'MS',
+  'MG',
+  'PA',
+  'PB',
+  'PR',
+  'PE',
+  'PI',
+  'RJ',
+  'RN',
+  'RS',
+  'RO',
+  'RR',
+  'SC',
+  'SP',
+  'SE',
+  'TO',
 ]
 
-// Mapa de cidades – preencha com sua base real
-const MUNICIPIOS_POR_UF: Record<string, string[]> = {
-  AC: ['Rio Branco', 'Cruzeiro do Sul'],
-  AL: ['Maceió', 'Arapiraca'],
-  SP: ['São Paulo', 'Campinas', 'Santos'],
-  RJ: ['Rio de Janeiro', 'Niterói'],
-  // ...adicione os demais UFs conforme precisar
+// ---------- Helpers de foco ----------
+
+type FieldRef = HTMLInputElement | HTMLTextAreaElement | null
+
+function focusAndScrollIntoView(el: FieldRef, center = false) {
+  if (!el) return
+  el.focus()
+  const block: ScrollLogicalPosition = center ? 'center' : 'nearest'
+  el.scrollIntoView({ behavior: 'smooth', block })
 }
+
+// ---------- Página ----------
 
 export default function FormSimplificadoPage() {
   const [model, setModel] = useState<FormSimplificadoModel>(INITIAL_MODEL)
-
   const [globalError, setGlobalError] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
 
-  // erros por campo (equivalente ao ValidationMessage principal)
-  const [nomeError, setNomeError] = useState<string | null>(null)
-  const [cpfError, setCpfError] = useState<string | null>(null)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [tipoViaError, setTipoViaError] = useState<string | null>(null)
-
-  // estado de foco interno dos grupos
   const [tipoEnderecoFocusIndex, setTipoEnderecoFocusIndex] = useState(0)
   const [tipoViaFocusIndex, setTipoViaFocusIndex] = useState(0)
 
-  // dropdowns
-  const [cidadesBaseAtual, setCidadesBaseAtual] = useState<string[]>([])
   const [ufDropdownOpen, setUfDropdownOpen] = useState(false)
   const [ufFocusedIndex, setUfFocusedIndex] = useState<number | null>(null)
   const [cidadeDropdownOpen, setCidadeDropdownOpen] = useState(false)
-  const [cidadeFocusedIndex, setCidadeFocusedIndex] = useState<number | null>(null)
+  const [cidadeFocusedIndex, setCidadeFocusedIndex] = useState<number | null>(
+    null
+  )
+  const [cidadesBaseAtual, setCidadesBaseAtual] = useState<string[]>([])
+
+  // refs dos campos, indexados pelo FieldIndex
+  const fieldRefs = useRef<FieldRef[]>([])
 
   const hasTipoViaSelecionado =
     model.TipoViaRua || model.TipoViaAvenida || model.TipoViaLogradouro
 
-  // ===== REFs (equivalente aos ElementReference) =====
-  const fieldNomeRef = useRef<HTMLInputElement | null>(null)
-  const fieldCpfRef = useRef<HTMLInputElement | null>(null)
-  const fieldEmailRef = useRef<HTMLInputElement | null>(null)
-  const fieldTelefoneRef = useRef<HTMLInputElement | null>(null)
+  // ---------- UF / Cidade filtrados ----------
 
-  const fieldLogradouroRef = useRef<HTMLInputElement | null>(null)
-  const fieldTipoEndComercialRef = useRef<HTMLInputElement | null>(null)
-  const fieldTipoEndEmpresarialRef = useRef<HTMLInputElement | null>(null)
-  const fieldUfRef = useRef<HTMLInputElement | null>(null)
-  const fieldCidadeRef = useRef<HTMLInputElement | null>(null)
+  const ufsFiltradas = useMemo(() => {
+    if (!model.Uf.trim()) return UFS
+    return UFS.filter((uf) =>
+      uf.toLowerCase().includes(model.Uf.toLowerCase())
+    )
+  }, [model.Uf])
 
-  const fieldTipoViaRuaRef = useRef<HTMLInputElement | null>(null)
-  const fieldTipoViaAvenidaRef = useRef<HTMLInputElement | null>(null)
-  const fieldTipoViaLogradouroRef = useRef<HTMLInputElement | null>(null)
-  const fieldDescricaoViaRef = useRef<HTMLTextAreaElement | null>(null)
+  const cidadesFiltradas = useMemo(() => {
+    if (!cidadesBaseAtual.length) return []
+    if (!model.Cidade.trim()) return cidadesBaseAtual
+    return cidadesBaseAtual.filter((c) =>
+      c.toLowerCase().includes(model.Cidade.toLowerCase())
+    )
+  }, [cidadesBaseAtual, model.Cidade])
 
-  const getFieldRef = (index: number) => {
-    switch (index) {
-      case IdxNome:
-        return fieldNomeRef.current
-      case IdxCpf:
-        return fieldCpfRef.current
-      case IdxEmail:
-        return fieldEmailRef.current
-      case IdxTelefone:
-        return fieldTelefoneRef.current
-      case IdxLogradouro:
-        return fieldLogradouroRef.current
-      case IdxTipoEndereco:
-        return tipoEnderecoFocusIndex === 0
-          ? fieldTipoEndComercialRef.current
-          : fieldTipoEndEmpresarialRef.current
-      case IdxUf:
-        return fieldUfRef.current
-      case IdxCidade:
-        return fieldCidadeRef.current
-      case IdxTipoVia:
-        if (tipoViaFocusIndex === 0) return fieldTipoViaRuaRef.current
-        if (tipoViaFocusIndex === 1) return fieldTipoViaAvenidaRef.current
-        return fieldTipoViaLogradouroRef.current
-      case IdxDescricaoVia:
-        return fieldDescricaoViaRef.current
-      default:
-        return fieldNomeRef.current
-    }
-  }
-
-  const focusField = (index: number, center = false) => {
-    if (index < 0 || index >= TOTAL_FIELDS) return
-    const el = getFieldRef(index)
-    if (!el) return
-    el.focus()
-    if (center) {
-      el.scrollIntoView({ block: 'center' })
-    }
-  }
+  // ---------- Lifecycle ----------
 
   useEffect(() => {
-    // foco inicial
-    focusField(IdxNome, true)
+    const first = fieldRefs.current[FieldIndex.Nome]
+    focusAndScrollIntoView(first, true)
   }, [])
 
-  // ===== helpers de validação =====
+  // ---------- Focus / ordem obrigatória ----------
 
-  const getFirstInvalidRequiredFieldIndex = (): number | null => {
-    if (!model.Nome.trim()) return IdxNome
-    if (!model.Cpf.trim()) return IdxCpf
-    if (!model.Email.trim()) return IdxEmail
-    if (!hasTipoViaSelecionado) return IdxTipoVia
+  const getFirstInvalidRequiredField = (): FieldIndex | null => {
+    if (!model.Nome.trim()) return FieldIndex.Nome
+    if (!model.Cpf.trim()) return FieldIndex.Cpf
+    if (!model.Email.trim()) return FieldIndex.Email
+    if (!hasTipoViaSelecionado) return FieldIndex.TipoVia
     return null
   }
 
-  const canLeaveField = (index: number): boolean => {
+  const handleFieldFocus = (index: FieldIndex) => {
+    const firstInvalid = getFirstInvalidRequiredField()
+    if (firstInvalid !== null && firstInvalid < index) {
+      setGlobalError(
+        'Preencha os campos obrigatórios na ordem antes de avançar.'
+      )
+      const el = fieldRefs.current[firstInvalid]
+      focusAndScrollIntoView(el, true)
+    } else {
+      if (globalError) setGlobalError(null)
+    }
+  }
+
+  // ---------- Atualização de campos ----------
+
+  const notifyTipoViaDummy = (next: FormSimplificadoModel) => {
+    next.TipoViaDummy =
+      next.TipoViaRua || next.TipoViaAvenida || next.TipoViaLogradouro
+  }
+
+  const handleFieldChanged = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    index: FieldIndex
+  ) => {
+    const value = e.target.value ?? ''
+
+    setModel((prev) => {
+      const next: FormSimplificadoModel = { ...prev }
+
+      switch (index) {
+        case FieldIndex.Nome:
+          next.Nome = value
+          break
+        case FieldIndex.Cpf:
+          next.Cpf = value
+          break
+        case FieldIndex.Email:
+          next.Email = value
+          break
+        case FieldIndex.Telefone:
+          next.Telefone = value
+          break
+        case FieldIndex.Logradouro:
+          next.Logradouro = value
+          break
+        case FieldIndex.Uf:
+          next.Uf = value.toUpperCase()
+          // atualizar cidades base
+          {
+            const lista =
+              MUNICIPIOS_POR_UF[next.Uf as keyof typeof MUNICIPIOS_POR_UF] ??
+              []
+            const arr = Array.isArray(lista) ? (lista as string[]) : []
+            setCidadesBaseAtual(arr)
+          }
+          next.Cidade = ''
+          setUfDropdownOpen(ufsFiltradas.length > 0)
+          setUfFocusedIndex(ufsFiltradas.length ? 0 : null)
+          setCidadeDropdownOpen(false)
+          setCidadeFocusedIndex(null)
+          break
+        case FieldIndex.Cidade:
+          next.Cidade = value
+          setCidadeDropdownOpen(cidadesFiltradas.length > 0)
+          setCidadeFocusedIndex(cidadesFiltradas.length ? 0 : null)
+          break
+        case FieldIndex.DescricaoVia:
+          next.DescricaoVia = value
+          break
+        default:
+          break
+      }
+
+      if (index === FieldIndex.TipoVia) {
+        notifyTipoViaDummy(next)
+      }
+
+      return next
+    })
+
+    if (globalError) setGlobalError(null)
+  }
+
+  const toggleTipoVia = (checkboxIndex: 0 | 1 | 2) => {
+    setModel((prev) => {
+      const next = { ...prev }
+      if (checkboxIndex === 0) next.TipoViaRua = !next.TipoViaRua
+      if (checkboxIndex === 1) next.TipoViaAvenida = !next.TipoViaAvenida
+      if (checkboxIndex === 2) next.TipoViaLogradouro = !next.TipoViaLogradouro
+      notifyTipoViaDummy(next)
+      return next
+    })
+    setGlobalError(null)
+  }
+
+  // ---------- UF / Cidade: seleção / toggle ----------
+
+  const selectUf = (uf: string) => {
+    if (!uf.trim()) return
+    setModel((prev) => ({
+      ...prev,
+      Uf: uf.toUpperCase(),
+      Cidade: '',
+    }))
+    const lista =
+      MUNICIPIOS_POR_UF[uf as keyof typeof MUNICIPIOS_POR_UF] ?? []
+    const arr = Array.isArray(lista) ? (lista as string[]) : []
+    setCidadesBaseAtual(arr)
+    setUfDropdownOpen(false)
+    setUfFocusedIndex(null)
+    setCidadeDropdownOpen(false)
+    setCidadeFocusedIndex(null)
+  }
+
+  const selectCidade = (cidade: string) => {
+    if (!cidade.trim()) return
+    setModel((prev) => ({ ...prev, Cidade: cidade }))
+    setCidadeDropdownOpen(false)
+    setCidadeFocusedIndex(null)
+  }
+
+  const toggleUfDropdown = () => {
+    if (!ufsFiltradas.length) return
+    setUfDropdownOpen((open) => {
+      const next = !open
+      setUfFocusedIndex(next ? 0 : null)
+      return next
+    })
+  }
+
+  const toggleCidadeDropdown = () => {
+    if (!cidadesFiltradas.length) return
+    setCidadeDropdownOpen((open) => {
+      const next = !open
+      setCidadeFocusedIndex(next ? 0 : null)
+      return next
+    })
+  }
+
+  // ---------- Validação de saída ----------
+
+  const canLeaveField = (index: FieldIndex): boolean => {
     setGlobalError(null)
 
     switch (index) {
-      case IdxNome:
+      case FieldIndex.Nome:
         if (!model.Nome.trim()) {
-          setNomeError('Nome é obrigatório.')
           setGlobalError('Preencha o nome antes de continuar.')
           return false
         }
         break
-
-      case IdxCpf:
+      case FieldIndex.Cpf:
         if (!model.Cpf.trim()) {
-          setCpfError('CPF é obrigatório.')
           setGlobalError('Preencha o CPF antes de continuar.')
           return false
         }
         break
-
-      case IdxEmail:
+      case FieldIndex.Email:
         if (!model.Email.trim()) {
-          setEmailError('E-mail é obrigatório.')
           setGlobalError('Preencha o e-mail antes de continuar.')
           return false
         }
         break
-
-      case IdxTipoVia:
+      case FieldIndex.TipoVia:
         if (!hasTipoViaSelecionado) {
-          setTipoViaError('Selecione pelo menos um tipo de via.')
           setGlobalError(
-            'Selecione Rua, Avenida ou Logradouro antes de continuar.',
+            'Selecione Rua, Avenida ou Logradouro antes de continuar.'
           )
           return false
         }
+        break
+      default:
         break
     }
 
     return true
   }
 
-  const handleFieldFocus = (index: number) => {
-    const firstInvalid = getFirstInvalidRequiredFieldIndex()
-    if (firstInvalid !== null && firstInvalid < index) {
-      setGlobalError(
-        'Preencha os campos obrigatórios na ordem antes de avançar.',
-      )
-      focusField(firstInvalid, true)
-    } else {
-      setGlobalError(null)
+  // ---------- Navegação via teclado ----------
+
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+    index: FieldIndex
+  ) => {
+    // Enter nunca deve submeter o form
+    if (e.key === 'Enter') {
+      e.preventDefault()
     }
-  }
 
-  const updateModel = (field: keyof FormSimplificadoModel, value: unknown) => {
-    setModel((prev) => ({ ...prev, [field]: value }))
-
-    // limpa erros de campo ao digitar
-    if (field === 'Nome') setNomeError(null)
-    if (field === 'Cpf') setCpfError(null)
-    if (field === 'Email') setEmailError(null)
-    if (
-      field === 'TipoViaRua' ||
-      field === 'TipoViaAvenida' ||
-      field === 'TipoViaLogradouro'
-    ) {
-      setTipoViaError(null)
-    }
-  }
-
-  const handleFieldChange = (index: number, value: string) => {
-    switch (index) {
-      case IdxNome:
-        updateModel('Nome', value)
-        break
-      case IdxCpf:
-        updateModel('Cpf', value)
-        break
-      case IdxEmail:
-        updateModel('Email', value)
-        break
-      case IdxTelefone:
-        updateModel('Telefone', value)
-        break
-      case IdxLogradouro:
-        updateModel('Logradouro', value)
-        break
-      case IdxUf: {
-        const uf = value.toUpperCase()
-        updateModel('Uf', uf)
-        const lista = MUNICIPIOS_POR_UF[uf] ?? []
-        setCidadesBaseAtual(lista)
-        updateModel('Cidade', '')
-        setCidadeDropdownOpen(false)
-        setCidadeFocusedIndex(null)
-        atualizarDropdownUf(uf)
-        break
-      }
-      case IdxCidade:
-        updateModel('Cidade', value)
-        atualizarDropdownCidade(value)
-        break
-      case IdxDescricaoVia:
-        updateModel('DescricaoVia', value)
-        break
-    }
-    setGlobalError(null)
-  }
-
-  // ===== dropdowns =====
-
-  const getUfsFiltradas = (texto: string): string[] => {
-    if (!texto.trim()) return UFS
-    return UFS.filter((uf) =>
-      uf.toLowerCase().includes(texto.trim().toLowerCase()),
-    )
-  }
-
-  const getCidadesFiltradas = (textoCidade: string): string[] => {
-    if (!cidadesBaseAtual || cidadesBaseAtual.length === 0) return []
-    if (!textoCidade.trim()) return cidadesBaseAtual
-    return cidadesBaseAtual.filter((c) =>
-      c.toLowerCase().includes(textoCidade.trim().toLowerCase()),
-    )
-  }
-
-  const atualizarDropdownUf = (textoUf: string) => {
-    const ufs = getUfsFiltradas(textoUf)
-    setUfDropdownOpen(ufs.length > 0)
-    setUfFocusedIndex(ufs.length > 0 ? 0 : null)
-  }
-
-  const atualizarDropdownCidade = (textoCidade: string) => {
-    const cidades = getCidadesFiltradas(textoCidade)
-    setCidadeDropdownOpen(cidades.length > 0)
-    setCidadeFocusedIndex(cidades.length > 0 ? 0 : null)
-  }
-
-  const selectUf = (uf: string) => {
-    if (!uf) return
-    updateModel('Uf', uf.toUpperCase())
-    const lista = MUNICIPIOS_POR_UF[uf] ?? []
-    setCidadesBaseAtual(lista)
-    updateModel('Cidade', '')
-    setUfDropdownOpen(false)
-    setUfFocusedIndex(null)
-  }
-
-  const selectCidade = (cidade: string) => {
-    if (!cidade) return
-    updateModel('Cidade', cidade)
-    setCidadeDropdownOpen(false)
-    setCidadeFocusedIndex(null)
-  }
-
-  const toggleUfDropdown = () => {
-    const lista = getUfsFiltradas(model.Uf)
-    if (lista.length === 0) return
-    setUfDropdownOpen((prev) => {
-      const open = !prev
-      setUfFocusedIndex(open ? 0 : null)
-      return open
-    })
-  }
-
-  const toggleCidadeDropdown = () => {
-    const lista = getCidadesFiltradas(model.Cidade)
-    if (lista.length === 0) return
-    setCidadeDropdownOpen((prev) => {
-      const open = !prev
-      setCidadeFocusedIndex(open ? 0 : null)
-      return open
-    })
-  }
-
-  // ===== tipo de via (checkboxes) =====
-  const toggleTipoVia = (index: number) => {
-    if (index === 0) updateModel('TipoViaRua', !model.TipoViaRua)
-    if (index === 1) updateModel('TipoViaAvenida', !model.TipoViaAvenida)
-    if (index === 2)
-      updateModel('TipoViaLogradouro', !model.TipoViaLogradouro)
-  }
-
-  // ===== teclado =====
-  const handleKeyDown = (e: KeyboardEvent<HTMLElement>, index: number) => {
-    // Radio: Tipo de endereço
-    if (index === IdxTipoEndereco) {
+    // Tipo de endereço (radios)
+    if (index === FieldIndex.TipoEndereco) {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        setTipoEnderecoFocusIndex((prev) => {
-          const next = prev === 0 ? 1 : 0
-          const value = next === 0 ? 'Comercial' : 'Empresarial'
-          updateModel('TipoEndereco', value)
-          const ref =
-            next === 0 ? fieldTipoEndComercialRef.current : fieldTipoEndEmpresarialRef.current
-          ref?.focus()
-          return next
-        })
+        const nextIdx = tipoEnderecoFocusIndex === 0 ? 1 : 0
+        setTipoEnderecoFocusIndex(nextIdx)
+        setModel((prev) => ({
+          ...prev,
+          TipoEndereco: nextIdx === 0 ? 'Comercial' : 'Empresarial',
+        }))
+        const el = fieldRefs.current[FieldIndex.TipoEndereco]
+        focusAndScrollIntoView(el)
         return
       }
 
       if (e.key === ' ') {
         e.preventDefault()
-        const value = tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial'
-        updateModel('TipoEndereco', value)
+        setModel((prev) => ({
+          ...prev,
+          TipoEndereco:
+            tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial',
+        }))
         return
       }
     }
 
-    // Checkboxes: Tipo de via
-    if (index === IdxTipoVia) {
+    // Tipo de via (checkboxes)
+    if (index === FieldIndex.TipoVia) {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
         const total = 3
-        setTipoViaFocusIndex((prev) => {
-          const forward = e.key === 'ArrowRight'
-          const next = forward
-            ? (prev + 1) % total
-            : (prev - 1 + total) % total
-
-          const ref: HTMLInputElement | null =
-            next === 0
-              ? fieldTipoViaRuaRef.current
-              : next === 1
-              ? fieldTipoViaAvenidaRef.current
-              : fieldTipoViaLogradouroRef.current
-
-          ref?.focus()
-          return next
-        })
+        const forward = e.key === 'ArrowRight'
+        const nextIdx = forward
+          ? (tipoViaFocusIndex + 1) % total
+          : (tipoViaFocusIndex - 1 + total) % total
+        setTipoViaFocusIndex(nextIdx)
+        const el = fieldRefs.current[FieldIndex.TipoVia]
+        focusAndScrollIntoView(el)
         return
       }
 
       if (e.key === ' ') {
         e.preventDefault()
-        toggleTipoVia(tipoViaFocusIndex)
+        toggleTipoVia(tipoViaFocusIndex as 0 | 1 | 2)
         return
       }
     }
 
-    // Dropdowns: UF / Cidade
-    if (index === IdxUf || index === IdxCidade) {
-      const isUf = index === IdxUf
+    // Dropdowns UF / Cidade
+    if (index === FieldIndex.Uf || index === FieldIndex.Cidade) {
+      const isUf = index === FieldIndex.Uf
       const isOpen = isUf ? ufDropdownOpen : cidadeDropdownOpen
-      const focused = isUf ? ufFocusedIndex : cidadeFocusedIndex
-      const options = isUf
-        ? getUfsFiltradas(model.Uf)
-        : getCidadesFiltradas(model.Cidade)
-      const count = options.length
+      const focusedIndex = isUf ? ufFocusedIndex : cidadeFocusedIndex
+      const options = isUf ? ufsFiltradas : cidadesFiltradas
+      const optionsCount = options.length
 
-      // F4 / Space abre dropdown
+      // abrir com F4 ou Space
       if ((e.key === 'F4' || e.key === ' ') && !isOpen) {
         e.preventDefault()
-        if (count === 0) return
+        if (!optionsCount) return
         if (isUf) {
           setUfDropdownOpen(true)
           setUfFocusedIndex(0)
@@ -431,7 +418,7 @@ export default function FormSimplificadoPage() {
         return
       }
 
-      if (isOpen && count > 0) {
+      if (isOpen && optionsCount > 0) {
         if (
           e.key === 'ArrowDown' ||
           e.key === 'ArrowUp' ||
@@ -439,12 +426,11 @@ export default function FormSimplificadoPage() {
           e.key === 'ArrowRight'
         ) {
           e.preventDefault()
-          let idx = focused ?? -1
-          const forward =
-            e.key === 'ArrowDown' || e.key === 'ArrowRight'
+          const forward = e.key === 'ArrowDown' || e.key === 'ArrowRight'
+          let idx = focusedIndex ?? -1
           idx = forward
-            ? (idx + 1 + count) % count
-            : (idx - 1 + count) % count
+            ? (idx + 1 + optionsCount) % optionsCount
+            : (idx - 1 + optionsCount) % optionsCount
 
           if (isUf) setUfFocusedIndex(idx)
           else setCidadeFocusedIndex(idx)
@@ -452,30 +438,35 @@ export default function FormSimplificadoPage() {
           return
         }
 
+        // espaço: seleciona mas não sai
         if (e.key === ' ') {
           e.preventDefault()
-          if (focused != null) {
-            const valor = options[focused]
+          if (focusedIndex != null) {
+            const valor = options[focusedIndex]
             if (isUf) selectUf(valor)
             else selectCidade(valor)
           }
           return
         }
 
+        // Enter: seleciona e vai para próximo campo
         if (e.key === 'Enter') {
           e.preventDefault()
-          if (focused != null) {
-            const valor = options[focused]
+          if (focusedIndex != null) {
+            const valor = options[focusedIndex]
             if (isUf) selectUf(valor)
             else selectCidade(valor)
           }
 
           if (!canLeaveField(index)) return
-          const next = Math.min(TOTAL_FIELDS - 1, index + 1)
-          focusField(next)
+
+          const nextIdx = Math.min(TOTAL_FIELDS - 1, index + 1)
+          const el = fieldRefs.current[nextIdx]
+          focusAndScrollIntoView(el, nextIdx === FieldIndex.Uf || nextIdx === FieldIndex.Cidade)
           return
         }
 
+        // Esc: fecha
         if (e.key === 'Escape') {
           e.preventDefault()
           if (isUf) {
@@ -488,41 +479,46 @@ export default function FormSimplificadoPage() {
           return
         }
       } else {
+        // dropdown fechado: ignora setas laterais
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-          // não faz nada quando dropdown fechado
+          e.preventDefault()
           return
         }
       }
     }
 
-    // Ctrl+Home / Ctrl+End
-    if (e.key === 'Home' && e.ctrlKey) {
+    // Atalhos globais
+    if (e.ctrlKey && e.key === 'Home') {
       e.preventDefault()
       setGlobalError(null)
-      focusField(IdxNome, true)
+      const el = fieldRefs.current[FieldIndex.Nome]
+      focusAndScrollIntoView(el, true)
       return
     }
 
-    if (e.key === 'End' && e.ctrlKey) {
+    if (e.ctrlKey && e.key === 'End') {
       e.preventDefault()
       setGlobalError(null)
-      focusField(TOTAL_FIELDS - 1, true)
+      const lastIdx = TOTAL_FIELDS - 1
+      const el = fieldRefs.current[lastIdx]
+      focusAndScrollIntoView(el, true)
       return
     }
 
-    // PageDown / PageUp
     if (e.key === 'PageDown') {
       e.preventDefault()
       const target = Math.min(TOTAL_FIELDS - 1, index + PAGE_SIZE)
-      const firstInvalid = getFirstInvalidRequiredFieldIndex()
+      const firstInvalid = getFirstInvalidRequiredField()
       if (firstInvalid !== null && firstInvalid < target) {
         setGlobalError(
-          'Preencha os campos obrigatórios na ordem antes de avançar.',
+          'Preencha os campos obrigatórios na ordem antes de avançar.'
         )
-        focusField(firstInvalid, true)
+        const el = fieldRefs.current[firstInvalid]
+        focusAndScrollIntoView(el, true)
       } else {
         setGlobalError(null)
-        focusField(target, true)
+        const el = fieldRefs.current[target]
+        focusAndScrollIntoView(el, true)
       }
       return
     }
@@ -531,57 +527,71 @@ export default function FormSimplificadoPage() {
       e.preventDefault()
       const target = Math.max(0, index - PAGE_SIZE)
       setGlobalError(null)
-      focusField(target, true)
+      const el = fieldRefs.current[target]
+      focusAndScrollIntoView(el, true)
       return
     }
 
-    // Navegação padrão
+    // Navegação vertical padrão
     if (e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault()
       if (!canLeaveField(index)) return
-      setGlobalError(null)
-      const next = Math.min(TOTAL_FIELDS - 1, index + 1)
-      const center = next === IdxUf || next === IdxCidade
-      focusField(next, center)
+      const nextIdx = Math.min(TOTAL_FIELDS - 1, index + 1)
+      const el = fieldRefs.current[nextIdx]
+      const center = nextIdx === FieldIndex.Uf || nextIdx === FieldIndex.Cidade
+      focusAndScrollIntoView(el, center)
       return
     }
 
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      const prev = Math.max(0, index - 1)
-      const center = prev === IdxUf || prev === IdxCidade
-      focusField(prev, center)
-      return
+      const prevIdx = Math.max(0, index - 1)
+      const el = fieldRefs.current[prevIdx]
+      const center = prevIdx === FieldIndex.Uf || prevIdx === FieldIndex.Cidade
+      focusAndScrollIntoView(el, center)
     }
   }
 
-  // ===== submit =====
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setMensagemSucesso(null)
+  // ---------- Submit ----------
 
-    const firstInvalid = getFirstInvalidRequiredFieldIndex()
+  const handleClickSubmit = () => {
+    setMensagemSucesso(null)
+    setGlobalError(null)
+
+    const firstInvalid = getFirstInvalidRequiredField()
     if (firstInvalid !== null) {
       setGlobalError('Preencha os campos obrigatórios antes de enviar.')
-
-      // seta mensagens por campo principais
-      if (!model.Nome.trim()) setNomeError('Nome é obrigatório.')
-      if (!model.Cpf.trim()) setCpfError('CPF é obrigatório.')
-      if (!model.Email.trim()) setEmailError('E-mail é obrigatório.')
-      if (!hasTipoViaSelecionado)
-        setTipoViaError('Selecione pelo menos um tipo de via.')
-
-      focusField(firstInvalid, true)
+      const el = fieldRefs.current[firstInvalid]
+      focusAndScrollIntoView(el, true)
       return
     }
 
-    setGlobalError(null)
     setMensagemSucesso(
-      'Formulário válido. Versão Next com navegação apenas por teclado.',
+      'Formulário válido. Navegação somente com teclado em Next.js.'
     )
   }
 
-  // ===== RENDER =====
+  // ---------- Render ----------
+
+  const labelCss = 'text-xs text-slate-700'
+  const inputCss =
+    'h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+  const inputCssWithButton =
+    'h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+  const validationCss = 'text-[10px] text-red-500 mt-0.5'
+  const checkboxRadioCss = 'h-3.5 w-3.5 border-border-soft text-primary'
+  const comboButtonCss =
+    'absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400'
+  const dropdownCss =
+    'absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs'
+  const dropdownItemCss = 'px-2 py-1 cursor-pointer hover:bg-slate-100'
+  const dropdownItemFocusedCss = 'px-2 py-1 cursor-pointer bg-primary text-white'
+  const textAreaCss =
+    'h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-100 disabled:text-slate-400'
+
+  const getDropdownItemClass = (focused: boolean) =>
+    focused ? dropdownItemFocusedCss : dropdownItemCss
+
   return (
     <div className='min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8'>
       <div className='w-full max-w-xl'>
@@ -597,12 +607,18 @@ export default function FormSimplificadoPage() {
               Preenchimento somente no teclado
             </h1>
             <p className='text-[11px] text-slate-500 text-center mt-1'>
-              Use as setas, Enter, Ctrl+Home / Ctrl+End, PageUp / PageDown.
-              Não é permitido pular campos obrigatórios.
+              Use as setas, Enter, Ctrl+Home / Ctrl+End, PageUp / PageDown. Não
+              é permitido pular campos obrigatórios.
             </p>
           </div>
 
-          <form autoComplete='off' onSubmit={handleSubmit}>
+          <form
+            autoComplete='off'
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleClickSubmit()
+            }}
+          >
             <div className='px-4 pt-3 pb-3 space-y-3'>
               {globalError && (
                 <div className='rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700'>
@@ -615,100 +631,81 @@ export default function FormSimplificadoPage() {
                 Dados básicos
               </div>
 
-              {/* 0 - Nome */}
+              {/* Nome */}
               <div className='space-y-1'>
-                <label className='text-xs text-slate-700' htmlFor='campo-nome'>
+                <label className={labelCss} htmlFor='campo-nome'>
                   Nome completo <span className='text-red-500'>*</span>
                 </label>
                 <input
                   id='campo-nome'
-                  ref={fieldNomeRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  ref={(el) => (fieldRefs.current[FieldIndex.Nome] = el)}
+                  className={inputCss}
                   placeholder='Informe o nome'
                   value={model.Nome}
-                  onChange={(e) =>
-                    handleFieldChange(IdxNome, e.target.value)
-                  }
-                  onFocus={() => handleFieldFocus(IdxNome)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxNome)}
+                  onChange={(e) => handleFieldChanged(e, FieldIndex.Nome)}
+                  onFocus={() => handleFieldFocus(FieldIndex.Nome)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.Nome)}
                 />
-                {nomeError && (
-                  <p className='text-[10px] text-red-500 mt-0.5'>
-                    {nomeError}
-                  </p>
+                {/* Mensagem de validação visual (se quiser manter, pode ligar a uma lib externa) */}
+                {!model.Nome.trim() && (
+                  <p className={validationCss}>Campo obrigatório.</p>
                 )}
               </div>
 
-              {/* 1 - CPF */}
+              {/* CPF */}
               <div className='space-y-1'>
-                <label className='text-xs text-slate-700' htmlFor='campo-cpf'>
+                <label className={labelCss} htmlFor='campo-cpf'>
                   CPF <span className='text-red-500'>*</span>
                 </label>
                 <input
                   id='campo-cpf'
-                  ref={fieldCpfRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  ref={(el) => (fieldRefs.current[FieldIndex.Cpf] = el)}
+                  className={inputCss}
                   placeholder='999.999.999-99'
                   value={model.Cpf}
-                  onChange={(e) =>
-                    handleFieldChange(IdxCpf, e.target.value)
-                  }
-                  onFocus={() => handleFieldFocus(IdxCpf)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxCpf)}
+                  onChange={(e) => handleFieldChanged(e, FieldIndex.Cpf)}
+                  onFocus={() => handleFieldFocus(FieldIndex.Cpf)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.Cpf)}
                 />
-                {cpfError && (
-                  <p className='text-[10px] text-red-500 mt-0.5'>
-                    {cpfError}
-                  </p>
+                {!model.Cpf.trim() && (
+                  <p className={validationCss}>Campo obrigatório.</p>
                 )}
               </div>
 
-              {/* 2 - E-mail */}
+              {/* Email */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-email'
-                >
+                <label className={labelCss} htmlFor='campo-email'>
                   E-mail <span className='text-red-500'>*</span>
                 </label>
                 <input
                   id='campo-email'
-                  ref={fieldEmailRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  ref={(el) => (fieldRefs.current[FieldIndex.Email] = el)}
+                  className={inputCss}
                   placeholder='email@dominio.com'
                   value={model.Email}
-                  onChange={(e) =>
-                    handleFieldChange(IdxEmail, e.target.value)
-                  }
-                  onFocus={() => handleFieldFocus(IdxEmail)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxEmail)}
+                  onChange={(e) => handleFieldChanged(e, FieldIndex.Email)}
+                  onFocus={() => handleFieldFocus(FieldIndex.Email)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.Email)}
                 />
-                {emailError && (
-                  <p className='text-[10px] text-red-500 mt-0.5'>
-                    {emailError}
-                  </p>
+                {!model.Email.trim() && (
+                  <p className={validationCss}>Campo obrigatório.</p>
                 )}
               </div>
 
-              {/* 3 - Telefone */}
+              {/* Telefone */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-telefone'
-                >
+                <label className={labelCss} htmlFor='campo-telefone'>
                   Telefone (opcional)
                 </label>
                 <input
                   id='campo-telefone'
-                  ref={fieldTelefoneRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  ref={(el) => (fieldRefs.current[FieldIndex.Telefone] = el)}
+                  className={inputCss}
                   placeholder='(00) 00000-0000'
                   value={model.Telefone}
-                  onChange={(e) =>
-                    handleFieldChange(IdxTelefone, e.target.value)
-                  }
-                  onFocus={() => handleFieldFocus(IdxTelefone)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxTelefone)}
+                  onChange={(e) => handleFieldChanged(e, FieldIndex.Telefone)}
+                  onFocus={() => handleFieldFocus(FieldIndex.Telefone)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.Telefone)}
                 />
               </div>
 
@@ -717,50 +714,52 @@ export default function FormSimplificadoPage() {
                 Endereço
               </div>
 
-              {/* 4 - Logradouro */}
+              {/* Logradouro */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-logradouro'
-                >
+                <label className={labelCss} htmlFor='campo-logradouro'>
                   Logradouro
                 </label>
                 <input
                   id='campo-logradouro'
-                  ref={fieldLogradouroRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                  ref={(el) =>
+                    (fieldRefs.current[FieldIndex.Logradouro] = el)
+                  }
+                  className={inputCss}
                   placeholder='Rua, avenida...'
                   value={model.Logradouro}
                   onChange={(e) =>
-                    handleFieldChange(IdxLogradouro, e.target.value)
+                    handleFieldChanged(e, FieldIndex.Logradouro)
                   }
-                  onFocus={() => handleFieldFocus(IdxLogradouro)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxLogradouro)}
+                  onFocus={() => handleFieldFocus(FieldIndex.Logradouro)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.Logradouro)}
                 />
               </div>
 
-              {/* 5 - Tipo de endereço (radio) */}
+              {/* Tipo de endereço */}
               <div className='space-y-1'>
-                <span className='text-xs text-slate-700'>
-                  Tipo de endereço
-                </span>
+                <span className={labelCss}>Tipo de endereço</span>
                 <div className='flex items-center gap-4'>
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
                       type='radio'
                       name='tipo-endereco'
                       value='Comercial'
-                      ref={fieldTipoEndComercialRef}
+                      ref={(el) =>
+                        (fieldRefs.current[FieldIndex.TipoEndereco] = el)
+                      }
                       checked={model.TipoEndereco === 'Comercial'}
                       onChange={() =>
-                        updateModel('TipoEndereco', 'Comercial')
+                        setModel((prev) => ({
+                          ...prev,
+                          TipoEndereco: 'Comercial',
+                        }))
                       }
                       onFocus={() => {
                         setTipoEnderecoFocusIndex(0)
-                        handleFieldFocus(IdxTipoEndereco)
+                        handleFieldFocus(FieldIndex.TipoEndereco)
                       }}
-                      onKeyDown={(e) => handleKeyDown(e, IdxTipoEndereco)}
-                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      onKeyDown={(e) => handleKeyDown(e, FieldIndex.TipoEndereco)}
+                      className={checkboxRadioCss}
                     />
                     <span className='ml-1'>Comercial</span>
                   </label>
@@ -770,64 +769,60 @@ export default function FormSimplificadoPage() {
                       type='radio'
                       name='tipo-endereco'
                       value='Empresarial'
-                      ref={fieldTipoEndEmpresarialRef}
                       checked={model.TipoEndereco === 'Empresarial'}
                       onChange={() =>
-                        updateModel('TipoEndereco', 'Empresarial')
+                        setModel((prev) => ({
+                          ...prev,
+                          TipoEndereco: 'Empresarial',
+                        }))
                       }
                       onFocus={() => {
                         setTipoEnderecoFocusIndex(1)
-                        handleFieldFocus(IdxTipoEndereco)
+                        handleFieldFocus(FieldIndex.TipoEndereco)
                       }}
-                      onKeyDown={(e) => handleKeyDown(e, IdxTipoEndereco)}
-                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      onKeyDown={(e) => handleKeyDown(e, FieldIndex.TipoEndereco)}
+                      className={checkboxRadioCss}
                     />
                     <span className='ml-1'>Empresarial</span>
                   </label>
                 </div>
               </div>
 
-              {/* 6 - UF */}
+              {/* UF */}
               <div className='space-y-1'>
-                <label className='text-xs text-slate-700' htmlFor='campo-uf'>
+                <label className={labelCss} htmlFor='campo-uf'>
                   UF
                 </label>
                 <div className='relative'>
                   <input
                     id='campo-uf'
-                    ref={fieldUfRef}
-                    value={model.Uf}
-                    onChange={(e) =>
-                      handleFieldChange(IdxUf, e.target.value)
-                    }
-                    onFocus={() => handleFieldFocus(IdxUf)}
-                    onKeyDown={(e) => handleKeyDown(e, IdxUf)}
+                    ref={(el) => (fieldRefs.current[FieldIndex.Uf] = el)}
+                    className={inputCssWithButton}
                     placeholder='UF'
                     autoComplete='off'
-                    className='h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                    value={model.Uf}
+                    onChange={(e) => handleFieldChanged(e, FieldIndex.Uf)}
+                    onFocus={() => handleFieldFocus(FieldIndex.Uf)}
+                    onKeyDown={(e) => handleKeyDown(e, FieldIndex.Uf)}
                   />
 
                   <button
                     type='button'
                     tabIndex={-1}
-                    className='absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400'
+                    className={comboButtonCss}
                     onClick={toggleUfDropdown}
                   >
                     ▼
                   </button>
 
                   {ufDropdownOpen && (
-                    <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs'>
-                      {getUfsFiltradas(model.Uf).map((uf, i) => {
-                        const isFocused = ufFocusedIndex === i
+                    <div className={dropdownCss}>
+                      {ufsFiltradas.map((uf, i) => {
+                        const focused = ufFocusedIndex === i
                         return (
                           <div
                             key={uf}
-                            className={`px-2 py-1 cursor-pointer ${
-                              isFocused
-                                ? 'bg-primary text-white'
-                                : 'hover:bg-slate-100'
-                            }`}
+                            className={getDropdownItemClass(focused)}
                             onClick={() => selectUf(uf)}
                           >
                             {uf}
@@ -839,50 +834,41 @@ export default function FormSimplificadoPage() {
                 </div>
               </div>
 
-              {/* 7 - Cidade */}
+              {/* Cidade */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-cidade'
-                >
+                <label className={labelCss} htmlFor='campo-cidade'>
                   Cidade
                 </label>
                 <div className='relative'>
                   <input
                     id='campo-cidade'
-                    ref={fieldCidadeRef}
-                    value={model.Cidade}
-                    onChange={(e) =>
-                      handleFieldChange(IdxCidade, e.target.value)
-                    }
-                    onFocus={() => handleFieldFocus(IdxCidade)}
-                    onKeyDown={(e) => handleKeyDown(e, IdxCidade)}
+                    ref={(el) => (fieldRefs.current[FieldIndex.Cidade] = el)}
+                    className={inputCssWithButton}
                     placeholder='Cidade'
                     autoComplete='off'
-                    className='h-9 w-full rounded-md border border-border-soft px-3 pr-6 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary'
+                    value={model.Cidade}
+                    onChange={(e) => handleFieldChanged(e, FieldIndex.Cidade)}
+                    onFocus={() => handleFieldFocus(FieldIndex.Cidade)}
+                    onKeyDown={(e) => handleKeyDown(e, FieldIndex.Cidade)}
                   />
 
                   <button
                     type='button'
                     tabIndex={-1}
-                    className='absolute inset-y-0 right-2 flex items-center text-[10px] text-slate-400'
+                    className={comboButtonCss}
                     onClick={toggleCidadeDropdown}
                   >
                     ▼
                   </button>
 
                   {cidadeDropdownOpen && (
-                    <div className='absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-md border border-border-soft bg-white shadow-md text-xs'>
-                      {getCidadesFiltradas(model.Cidade).map((cidade, i) => {
-                        const isFocused = cidadeFocusedIndex === i
+                    <div className={dropdownCss}>
+                      {cidadesFiltradas.map((cidade, i) => {
+                        const focused = cidadeFocusedIndex === i
                         return (
                           <div
                             key={`${cidade}-${i}`}
-                            className={`px-2 py-1 cursor-pointer ${
-                              isFocused
-                                ? 'bg-primary text-white'
-                                : 'hover:bg-slate-100'
-                            }`}
+                            className={getDropdownItemClass(focused)}
                             onClick={() => selectCidade(cidade)}
                           >
                             {cidade}
@@ -894,24 +880,26 @@ export default function FormSimplificadoPage() {
                 </div>
               </div>
 
-              {/* 8 - Tipo de via */}
+              {/* Tipo de via */}
               <div className='space-y-1'>
-                <span className='text-xs text-slate-700'>
+                <span className={labelCss}>
                   Tipo de via <span className='text-red-500'>*</span>
                 </span>
                 <div className='flex items-center gap-4'>
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
                       type='checkbox'
-                      ref={fieldTipoViaRuaRef}
+                      ref={(el) =>
+                        (fieldRefs.current[FieldIndex.TipoVia] = el)
+                      }
                       checked={model.TipoViaRua}
                       onChange={() => toggleTipoVia(0)}
                       onFocus={() => {
                         setTipoViaFocusIndex(0)
-                        handleFieldFocus(IdxTipoVia)
+                        handleFieldFocus(FieldIndex.TipoVia)
                       }}
-                      onKeyDown={(e) => handleKeyDown(e, IdxTipoVia)}
-                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      onKeyDown={(e) => handleKeyDown(e, FieldIndex.TipoVia)}
+                      className={checkboxRadioCss}
                     />
                     <span className='ml-1'>Rua</span>
                   </label>
@@ -919,15 +907,14 @@ export default function FormSimplificadoPage() {
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
                       type='checkbox'
-                      ref={fieldTipoViaAvenidaRef}
                       checked={model.TipoViaAvenida}
                       onChange={() => toggleTipoVia(1)}
                       onFocus={() => {
                         setTipoViaFocusIndex(1)
-                        handleFieldFocus(IdxTipoVia)
+                        handleFieldFocus(FieldIndex.TipoVia)
                       }}
-                      onKeyDown={(e) => handleKeyDown(e, IdxTipoVia)}
-                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      onKeyDown={(e) => handleKeyDown(e, FieldIndex.TipoVia)}
+                      className={checkboxRadioCss}
                     />
                     <span className='ml-1'>Avenida</span>
                   </label>
@@ -935,50 +922,48 @@ export default function FormSimplificadoPage() {
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
                       type='checkbox'
-                      ref={fieldTipoViaLogradouroRef}
                       checked={model.TipoViaLogradouro}
                       onChange={() => toggleTipoVia(2)}
                       onFocus={() => {
                         setTipoViaFocusIndex(2)
-                        handleFieldFocus(IdxTipoVia)
+                        handleFieldFocus(FieldIndex.TipoVia)
                       }}
-                      onKeyDown={(e) => handleKeyDown(e, IdxTipoVia)}
-                      className='h-3.5 w-3.5 border-border-soft text-primary'
+                      onKeyDown={(e) => handleKeyDown(e, FieldIndex.TipoVia)}
+                      className={checkboxRadioCss}
                     />
                     <span className='ml-1'>Logradouro</span>
                   </label>
                 </div>
-                {tipoViaError && (
-                  <p className='text-[10px] text-red-500 mt-0.5'>
-                    {tipoViaError}
+                {!hasTipoViaSelecionado && (
+                  <p className={validationCss}>
+                    Selecione pelo menos um tipo de via.
                   </p>
                 )}
               </div>
 
-              {/* 9 - Descrição da via */}
+              {/* Descrição da via */}
               <div className='space-y-1'>
-                <label
-                  className='text-xs text-slate-700'
-                  htmlFor='campo-desc-via'
-                >
+                <label className={labelCss} htmlFor='campo-desc-via'>
                   Nome da rua/avenida/logradouro
                 </label>
                 <textarea
                   id='campo-desc-via'
-                  ref={fieldDescricaoViaRef}
-                  className='h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-100 disabled:text-slate-400'
+                  ref={(el) =>
+                    (fieldRefs.current[FieldIndex.DescricaoVia] = el)
+                  }
+                  className={textAreaCss}
                   placeholder='Ex.: Rua das Flores, Av. Paulista...'
                   value={model.DescricaoVia}
                   disabled={!hasTipoViaSelecionado}
                   onChange={(e) =>
-                    handleFieldChange(IdxDescricaoVia, e.target.value)
+                    handleFieldChanged(e, FieldIndex.DescricaoVia)
                   }
-                  onFocus={() => handleFieldFocus(IdxDescricaoVia)}
-                  onKeyDown={(e) => handleKeyDown(e, IdxDescricaoVia)}
+                  onFocus={() => handleFieldFocus(FieldIndex.DescricaoVia)}
+                  onKeyDown={(e) => handleKeyDown(e, FieldIndex.DescricaoVia)}
                 />
               </div>
 
-              {/* Botão */}
+              {/* Botão de envio */}
               <div className='pt-2'>
                 <button
                   type='submit'
