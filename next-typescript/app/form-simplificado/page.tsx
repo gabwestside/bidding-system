@@ -356,7 +356,7 @@ export default function FormSimplificadoPage() {
         setTipoEnderecoFocusIndex(nextIdx)
         setModel((prev) => ({
           ...prev,
-          TipoEndereco: nextIdx === 0 ? 'Comercial' : 'Empresarial',
+          TipoEndereco: nextIdx === 1 ? 'Empresarial' : 'Comercial',
         }))
         const el = fieldRefs.current[FieldIndex.TipoEndereco]
         focusAndScrollIntoView(el)
@@ -368,7 +368,7 @@ export default function FormSimplificadoPage() {
         setModel((prev) => ({
           ...prev,
           TipoEndereco:
-            tipoEnderecoFocusIndex === 0 ? 'Comercial' : 'Empresarial',
+            tipoEnderecoFocusIndex === 1 ? 'Empresarial' : 'Comercial',
         }))
         return
       }
@@ -638,7 +638,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <input
                   id='campo-nome'
-                  ref={(el) => (fieldRefs.current[FieldIndex.Nome] = el)}
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.Nome] = el
+                  }}
                   className={inputCss}
                   placeholder='Informe o nome'
                   value={model.Nome}
@@ -659,7 +661,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <input
                   id='campo-cpf'
-                  ref={(el) => (fieldRefs.current[FieldIndex.Cpf] = el)}
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.Cpf] = el
+                  }}
                   className={inputCss}
                   placeholder='999.999.999-99'
                   value={model.Cpf}
@@ -679,7 +683,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <input
                   id='campo-email'
-                  ref={(el) => (fieldRefs.current[FieldIndex.Email] = el)}
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.Email] = el
+                  }}
                   className={inputCss}
                   placeholder='email@dominio.com'
                   value={model.Email}
@@ -699,7 +705,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <input
                   id='campo-telefone'
-                  ref={(el) => (fieldRefs.current[FieldIndex.Telefone] = el)}
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.Telefone] = el
+                  }}
                   className={inputCss}
                   placeholder='(00) 00000-0000'
                   value={model.Telefone}
@@ -721,9 +729,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <input
                   id='campo-logradouro'
-                  ref={(el) =>
-                    (fieldRefs.current[FieldIndex.Logradouro] = el)
-                  }
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.Logradouro] = el
+                  }}
                   className={inputCss}
                   placeholder='Rua, avenida...'
                   value={model.Logradouro}
@@ -744,9 +752,9 @@ export default function FormSimplificadoPage() {
                       type='radio'
                       name='tipo-endereco'
                       value='Comercial'
-                      ref={(el) =>
-                        (fieldRefs.current[FieldIndex.TipoEndereco] = el)
-                      }
+                      ref={(el) => {
+                        fieldRefs.current[FieldIndex.TipoEndereco] = el
+                      }}
                       checked={model.TipoEndereco === 'Comercial'}
                       onChange={() =>
                         setModel((prev) => ({
@@ -796,7 +804,9 @@ export default function FormSimplificadoPage() {
                 <div className='relative'>
                   <input
                     id='campo-uf'
-                    ref={(el) => (fieldRefs.current[FieldIndex.Uf] = el)}
+                    ref={(el) => {
+                      fieldRefs.current[FieldIndex.Uf] = el
+                    }}
                     className={inputCssWithButton}
                     placeholder='UF'
                     autoComplete='off'
@@ -842,7 +852,9 @@ export default function FormSimplificadoPage() {
                 <div className='relative'>
                   <input
                     id='campo-cidade'
-                    ref={(el) => (fieldRefs.current[FieldIndex.Cidade] = el)}
+                    ref={(el) => {
+                      fieldRefs.current[FieldIndex.Cidade] = el
+                    }}
                     className={inputCssWithButton}
                     placeholder='Cidade'
                     autoComplete='off'
@@ -889,9 +901,9 @@ export default function FormSimplificadoPage() {
                   <label className='inline-flex items-center text-xs text-slate-700'>
                     <input
                       type='checkbox'
-                      ref={(el) =>
-                        (fieldRefs.current[FieldIndex.TipoVia] = el)
-                      }
+                      ref={(el) => {
+                        fieldRefs.current[FieldIndex.TipoVia] = el
+                      }}
                       checked={model.TipoViaRua}
                       onChange={() => toggleTipoVia(0)}
                       onFocus={() => {
@@ -948,9 +960,9 @@ export default function FormSimplificadoPage() {
                 </label>
                 <textarea
                   id='campo-desc-via'
-                  ref={(el) =>
-                    (fieldRefs.current[FieldIndex.DescricaoVia] = el)
-                  }
+                  ref={(el) => {
+                    fieldRefs.current[FieldIndex.DescricaoVia] = el
+                  }}
                   className={textAreaCss}
                   placeholder='Ex.: Rua das Flores, Av. Paulista...'
                   value={model.DescricaoVia}
