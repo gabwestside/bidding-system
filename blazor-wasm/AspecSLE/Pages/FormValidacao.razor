@@ -1,0 +1,818 @@
+@page "/form-validacao"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Web
+@using AspecSLE.Services
+
+@inject IJSRuntime Js
+
+<PageTitle>Aspec Licita - Formulário de validação</PageTitle>
+
+<div class="min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">
+                Formulário de validação
+            </span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Validações específicas
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Exemplo de uso de formulário com validação manual e navegação apenas por teclado.
+                </p>
+            </div>
+
+            <EditForm Model="_model" autocomplete="off" @onsubmit="HandleValidateClick">
+                <DataAnnotationsValidator/>
+                <div class="px-4 pt-3 pb-3 space-y-3 h-full overflow-auto kb-scroll-container">
+                    @if (!string.IsNullOrEmpty(_globalError))
+                    {
+                        <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                            @_globalError
+                        </div>
+                    }
+
+                    <!-- BLOCO 1 - Dados básicos -->
+                    <div class="text-[11px] font-semibold text-slate-600 mt-1">Dados básicos</div>
+
+                    <!-- 0 - Nome -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-nome">
+                            Nome completo <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-nome" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Nome") ? "border-red-500" : "")"
+                               placeholder="Informe o nome" value="@_model.Nome"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.Nome = e.Value?.ToString() ?? "";
+                                              _errors.Remove("Nome");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(0)"
+                               @onkeydown="async e => await OnKeyDown(e, 0)"/>
+                        @if (_errors.ContainsKey("Nome"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Nome"]</span>
+                        }
+                    </div>
+
+                    <!-- 1 - CPF -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-cpf">
+                            CPF <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-cpf" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Cpf") ? "border-red-500" : "")"
+                               placeholder="999.999.999-99" value="@_model.Cpf"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.Cpf = e.Value?.ToString() ?? "";
+                                              _errors.Remove("Cpf");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(1)"
+                               @onkeydown="async e => await OnKeyDown(e, 1)"/>
+                        @if (_errors.ContainsKey("Cpf"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Cpf"]</span>
+                        }
+                    </div>
+
+                    <!-- 2 - E-mail -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-email">
+                            E-mail <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-email" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Email") ? "border-red-500" : "")"
+                               placeholder="email@dominio.com" value="@_model.Email"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.Email = e.Value?.ToString() ?? "";
+                                              _errors.Remove("Email");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(2)"
+                               @onkeydown="async e => await OnKeyDown(e, 2)"/>
+                        @if (_errors.ContainsKey("Email"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Email"]</span>
+                        }
+                    </div>
+
+                    <!-- 3 - Telefone (opcional) -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-telefone">
+                            Telefone (opcional)
+                        </label>
+                        <input id="campo-telefone" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Telefone") ? "border-red-500" : "")"
+                               placeholder="(00) 00000-0000" value="@_model.Telefone"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.Telefone = e.Value?.ToString() ?? "";
+                                              _errors.Remove("Telefone");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(3)"
+                               @onkeydown="async e => await OnKeyDown(e, 3)"/>
+                        @if (_errors.ContainsKey("Telefone"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Telefone"]</span>
+                        }
+                    </div>
+
+                    <!-- BLOCO 2 - Endereço -->
+                    <div class="text-[11px] font-semibold text-slate-600 mt-3">Endereço</div>
+
+                    <!-- 4 - Logradouro -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-logradouro">
+                            Logradouro
+                        </label>
+                        <input id="campo-logradouro" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Logradouro") ? "border-red-500" : "")"
+                               placeholder="Rua, avenida..." value="@_model.Logradouro"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.Logradouro = e.Value?.ToString() ?? "";
+                                              _errors.Remove("Logradouro");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(4)"
+                               @onkeydown="async e => await OnKeyDown(e, 4)"/>
+                        @if (_errors.ContainsKey("Logradouro"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Logradouro"]</span>
+                        }
+                    </div>
+
+                    <!-- 5 - Tipo de endereço (radio) -->
+                    <div class="space-y-1 flex flex-col">
+                        <span class="text-xs text-slate-700">
+                            Tipo de endereço <span class="text-red-500">*</span>
+                        </span>
+
+                        <div class="flex items-center gap-4 text-xs text-slate-700">
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="radio" id="campo-tipo-end-com" name="tipo-endereco"
+                                       class="h-3.5 w-3.5 border-border-soft text-primary" value="Comercial"
+                                       checked="@(_model.TipoEndereco == "Comercial")"
+                                       @onchange="@(() => { OnTipoEnderecoChanged("Comercial", 0); })" @onfocus="async _ => {
+                                            _tipoEnderecoFocusIndex = 0;
+                                            await OnFieldFocus(5);
+                                        }" @onkeydown="async e => await OnKeyDown(e, 5)"
+                                       @onkeydown:preventDefault="true"/>
+                                <span class="ml-1">Comercial</span>
+                            </label>
+
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="radio" id="campo-tipo-end-emp" name="tipo-endereco"
+                                       class="h-3.5 w-3.5 border-border-soft text-primary" value="Empresarial"
+                                       checked="@(_model.TipoEndereco == "Empresarial")"
+                                       @onchange="@(() => { OnTipoEnderecoChanged("Empresarial", 1); })" @onfocus="async _ => {
+                                            _tipoEnderecoFocusIndex = 1;
+                                            await OnFieldFocus(5);
+                                        }" @onkeydown="async e => await OnKeyDown(e, 5)"
+                                       @onkeydown:preventDefault="true"/>
+                                <span class="ml-1">Empresarial</span>
+                            </label>
+                        </div>
+
+                        @if (_errors.ContainsKey("TipoEndereco"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["TipoEndereco"]</span>
+                        }
+                    </div>
+
+                    <!-- 6 - UF -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-uf">
+                            UF
+                        </label>
+
+                        <select id="campo-uf"
+                                class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("Uf") ? "border-red-500" : "")"
+                                value="@_model.Uf" disabled="@(!CanUseField(6))"
+                                @onchange="@((ChangeEventArgs e) =>
+                                           {
+                                               _model.Uf = e.Value?.ToString() ?? "";
+                                               AtualizarCidadesBase();
+                                               _errors.Remove("Uf");
+                                           })"
+                                @onfocus="async _ => await OnFieldFocus(6)"
+                                @onkeydown="async e => await OnSelectKeyDownNative(e, 6)"
+                                @onkeydown:preventDefault="true">
+                            <option value="">Selecione...</option>
+                            @for (var i = 0; i < _ufs.Length; i++)
+                            {
+                                <option value="@_ufs[i]">@_ufs[i]</option>
+                            }
+                        </select>
+
+                        @if (_errors.ContainsKey("Uf"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Uf"]</span>
+                        }
+                    </div>
+
+                    <!-- 7 - Cidade -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-cidade">
+                            Cidade
+                        </label>
+
+                        <select id="campo-cidade"
+                                class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-slate-50 disabled:text-slate-400 @(_errors.ContainsKey("Cidade") ? "border-red-500" : "")"
+                                value="@_model.Cidade"
+                                disabled="@(!CanUseField(7) || string.IsNullOrWhiteSpace(_model.Uf))"
+                                @onchange="@((ChangeEventArgs e) =>
+                                           {
+                                               _model.Cidade = e.Value?.ToString() ?? "";
+                                               _errors.Remove("Cidade");
+                                           })"
+                                @onfocus="async _ => await OnFieldFocus(7)"
+                                @onkeydown="async e => await OnSelectKeyDownNative(e, 7)"
+                                @onkeydown:preventDefault="true">
+                            <option value="">Selecione...</option>
+                            @for (var i = 0; i < _cidadesBaseAtual.Count; i++)
+                            {
+                                <option value="@_cidadesBaseAtual[i]">@_cidadesBaseAtual[i]</option>
+                            }
+                        </select>
+
+                        @if (_errors.ContainsKey("Cidade"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["Cidade"]</span>
+                        }
+                    </div>
+
+                    <!-- 8 - Tipo de via -->
+                    <div class="space-y-1">
+                        <span class="text-xs text-slate-700">
+                            Tipo de via <span class="text-red-500">*</span>
+                        </span>
+                        <div class="flex items-center gap-4 text-xs text-slate-700">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" id="campo-tipo-via-rua"
+                                       class="h-3.5 w-3.5 border-border-soft text-primary" checked="@_model.TipoViaRua"
+                                       @onchange="@((ChangeEventArgs e) =>
+                                                  {
+                                                      _model.TipoViaRua = (bool)e.Value!;
+                                                      _errors.Remove("TipoVia");
+                                                  })"
+                                       @onfocus="async _ => await OnFieldFocus(8)"
+                                       @onkeydown="async e => await OnKeyDown(e, 8)"/>
+                                <span class="ml-1">Rua</span>
+                            </label>
+
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" id="campo-tipo-via-av"
+                                       class="h-3.5 w-3.5 border-border-soft text-primary"
+                                       checked="@_model.TipoViaAvenida"
+                                       @onchange="@((ChangeEventArgs e) =>
+                                                  {
+                                                      _model.TipoViaAvenida = (bool)e.Value!;
+                                                      _errors.Remove("TipoVia");
+                                                  })"
+                                       @onfocus="async _ => await OnFieldFocus(8)"
+                                       @onkeydown="async e => await OnKeyDown(e, 8)"/>
+                                <span class="ml-1">Avenida</span>
+                            </label>
+
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" id="campo-tipo-via-log"
+                                       class="h-3.5 w-3.5 border-border-soft text-primary"
+                                       checked="@_model.TipoViaLogradouro"
+                                       @onchange="@((ChangeEventArgs e) =>
+                                                  {
+                                                      _model.TipoViaLogradouro = (bool)e.Value!;
+                                                      _errors.Remove("TipoVia");
+                                                  })"
+                                       @onfocus="async _ => await OnFieldFocus(8)"
+                                       @onkeydown="async e => await OnKeyDown(e, 8)"/>
+                                <span class="ml-1">Logradouro</span>
+                            </label>
+                        </div>
+                        @if (_errors.ContainsKey("TipoVia"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["TipoVia"]</span>
+                        }
+                    </div>
+
+                    <!-- 9 - Descrição da via -->
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-700" for="campo-desc-via">
+                            Nome da rua/avenida/logradouro
+                        </label>
+                        <input id="campo-desc-via" type="text" autocomplete="off"
+                               class="h-9 w-full rounded-md border border-border-soft px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary @(_errors.ContainsKey("DescricaoVia") ? "border-red-500" : "")"
+                               placeholder="Ex.: Rua das Flores, Av. Paulista..." value="@_model.DescricaoVia"
+                               @onchange="@((ChangeEventArgs e) =>
+                                          {
+                                              _model.DescricaoVia = e.Value?.ToString() ?? "";
+                                              _errors.Remove("DescricaoVia");
+                                          })"
+                               @onfocus="async _ => await OnFieldFocus(9)"
+                               @onkeydown="async e => await OnKeyDown(e, 9)"/>
+                        @if (_errors.ContainsKey("DescricaoVia"))
+                        {
+                            <span class="text-[10px] text-red-500 mt-0.5">@_errors["DescricaoVia"]</span>
+                        }
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-md bg-primary text-white hover:opacity-90">
+                            Validar / Enviar
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_mensagemSucesso))
+                    {
+                        <div
+                            class="mt-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                            @_mensagemSucesso
+                        </div>
+                    }
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const int TotalFields = 10;
+    private const int PageSize = 4;
+
+    private readonly string[] _fieldIds =
+    [
+        "campo-nome",
+        "campo-cpf",
+        "campo-email",
+        "campo-telefone",
+        "campo-logradouro",
+        "campo-tipo-end-com",
+        "campo-uf",
+        "campo-cidade",
+        "campo-tipo-via-rua",
+        "campo-desc-via"
+    ];
+
+    private readonly FormValidacaoModel _model = new();
+    private readonly Dictionary<string, string> _errors = new();
+
+    private string? _mensagemSucesso;
+    private string? _globalError;
+
+    private int _tipoEnderecoFocusIndex;
+
+    private readonly string[] _ufs =
+    [
+        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+        "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+        "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+    ];
+
+    private IReadOnlyList<string> _cidadesBaseAtual = [];
+
+    private bool _ufDropdownMode;
+    private int _ufPendingIndex;
+    private bool _cidadeDropdownMode;
+    private int _cidadePendingIndex;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await FocusFieldAsync(0, center: true);
+        }
+    }
+
+    private async Task FocusFieldAsync(int index, bool center = false)
+    {
+        if (index < 0 || index >= TotalFields)
+            return;
+
+        var id = _fieldIds[index];
+        await Js.InvokeVoidAsync("keyboardForm.focusById", id, center);
+    }
+
+    private async Task OnFieldFocus(int index)
+    {
+        var firstInvalid = GetFirstInvalidRequiredFieldIndex();
+        if (firstInvalid.HasValue && firstInvalid.Value < index)
+        {
+            _globalError = "Preencha os campos obrigatórios na ordem antes de avançar.";
+            await FocusFieldAsync(firstInvalid.Value, center: true);
+            StateHasChanged();
+        }
+        else
+        {
+            _globalError = null;
+        }
+    }
+
+    private void AtualizarCidadesBase()
+    {
+        _cidadesBaseAtual = string.IsNullOrWhiteSpace(_model.Uf)
+            ? []
+            : MunicipiosPorUfService.ObterPorUf(_model.Uf);
+
+        _model.Cidade = string.Empty;
+    }
+
+    private void OnTipoEnderecoChanged(string valor, int focusIndex)
+    {
+        _tipoEnderecoFocusIndex = focusIndex;
+        _model.TipoEndereco = valor;
+        _errors.Remove("TipoEndereco");
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (index == 5)
+        {
+            if (e.Key is "ArrowLeft" or "ArrowRight")
+            {
+                _tipoEnderecoFocusIndex = _tipoEnderecoFocusIndex == 0 ? 1 : 0;
+
+                var radioId = _tipoEnderecoFocusIndex == 0
+                    ? "campo-tipo-end-com"
+                    : "campo-tipo-end-emp";
+
+                await Js.InvokeVoidAsync("keyboardForm.focusById", radioId, false);
+                return;
+            }
+
+            if (e.Key is "ArrowDown" or "ArrowUp")
+            {
+                if (string.IsNullOrWhiteSpace(_model.TipoEndereco))
+                {
+                    return;
+                }
+
+                var targetIndex = e.Key == "ArrowDown"
+                    ? Math.Min(TotalFields - 1, index + 1)
+                    : Math.Max(0, index - 1);
+
+                await FocusFieldAsync(targetIndex);
+                return;
+            }
+
+            if (e.Key == " ")
+            {
+                _model.TipoEndereco = _tipoEnderecoFocusIndex == 0 ? "Comercial" : "Empresarial";
+                _errors.Remove("TipoEndereco");
+                StateHasChanged();
+                return;
+            }
+        }
+
+        // Ctrl + Home → primeiro campo
+        if (e is { Key: "Home", CtrlKey: true })
+        {
+            _globalError = null;
+            await FocusFieldAsync(0, center: true);
+            return;
+        }
+
+        // Ctrl + End → último campo
+        if (e is { Key: "End", CtrlKey: true })
+        {
+            _globalError = null;
+            await FocusFieldAsync(TotalFields - 1, center: true);
+            return;
+        }
+
+        // PageDown → bloco para frente
+        if (e.Key == "PageDown")
+        {
+            var target = Math.Min(TotalFields - 1, index + PageSize);
+            var firstInvalid = GetFirstInvalidRequiredFieldIndex();
+
+            if (firstInvalid.HasValue && firstInvalid.Value < target)
+            {
+                _globalError = "Preencha os campos obrigatórios na ordem antes de avançar.";
+                await FocusFieldAsync(firstInvalid.Value, center: true);
+            }
+            else
+            {
+                _globalError = null;
+                await FocusFieldAsync(target, center: true);
+            }
+
+            return;
+        }
+
+        // PageUp → bloco para trás
+        if (e.Key == "PageUp")
+        {
+            var target = Math.Max(0, index - PageSize);
+            _globalError = null;
+            await FocusFieldAsync(target, center: true);
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+            case "Enter":
+            {
+                if (!CanLeaveField(index))
+                    return;
+
+                var nextIndex = Math.Min(TotalFields - 1, index + 1);
+                await FocusFieldAsync(nextIndex);
+                break;
+            }
+
+            case "ArrowUp":
+            {
+                var prevIndex = Math.Max(0, index - 1);
+                await FocusFieldAsync(prevIndex);
+                break;
+            }
+        }
+    }
+
+    private async Task OnSelectKeyDownNative(KeyboardEventArgs e, int index)
+    {
+        if (!CanUseField(index))
+        {
+            int? firstInvalid = GetFirstInvalidRequiredFieldIndex();
+            if (firstInvalid.HasValue)
+            {
+                await FocusFieldAsync(firstInvalid.Value, center: true);
+            }
+
+            return;
+        }
+
+        bool isUf = index == 6;
+        bool dropdownMode = isUf ? _ufDropdownMode : _cidadeDropdownMode;
+
+        if (e.Key == "F4" || e.Key == " ")
+        {
+            if (!dropdownMode)
+            {
+                await EnterDropdownModeAsync(isUf);
+            }
+            else if (e.Key == " ")
+            {
+                CommitDropdownSelection(isUf);
+            }
+
+            return;
+        }
+
+        if (e.Key == "Escape")
+        {
+            if (dropdownMode)
+            {
+                if (isUf)
+                    _ufDropdownMode = false;
+                else
+                    _cidadeDropdownMode = false;
+            }
+
+            return;
+        }
+
+        if (e.Key == "ArrowDown" || e.Key == "ArrowUp")
+        {
+            if (dropdownMode)
+            {
+                int delta = e.Key == "ArrowDown" ? 1 : -1;
+                await MovePendingAsync(isUf, delta);
+            }
+            else
+            {
+                int targetIndex = e.Key == "ArrowDown"
+                    ? Math.Min(TotalFields - 1, index + 1)
+                    : Math.Max(0, index - 1);
+
+                if (e.Key == "ArrowDown" && !CanLeaveField(index))
+                    return;
+
+                await FocusFieldAsync(targetIndex);
+            }
+
+            return;
+        }
+
+        if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+        {
+            if (dropdownMode)
+            {
+                int delta = e.Key == "ArrowRight" ? 1 : -1;
+                await MovePendingAsync(isUf, delta);
+            }
+
+            return;
+        }
+
+        if (e.Key == "Enter")
+        {
+            if (dropdownMode)
+            {
+                if (isUf)
+                    _ufDropdownMode = false;
+                else
+                    _cidadeDropdownMode = false;
+            }
+
+            if (!CanLeaveField(index))
+                return;
+
+            int nextIndex = Math.Min(TotalFields - 1, index + 1);
+            await FocusFieldAsync(nextIndex);
+            return;
+        }
+    }
+
+    private bool CanLeaveField(int index)
+    {
+        _globalError = null;
+
+        switch (index)
+        {
+            case 0 when string.IsNullOrWhiteSpace(_model.Nome):
+                _globalError = "Preencha o nome antes de continuar.";
+                return false;
+
+            case 1 when string.IsNullOrWhiteSpace(_model.Cpf):
+                _globalError = "Preencha o CPF antes de continuar.";
+                return false;
+
+            case 2 when string.IsNullOrWhiteSpace(_model.Email):
+                _globalError = "Preencha o e-mail antes de continuar.";
+                return false;
+
+            case 5 when string.IsNullOrWhiteSpace(_model.TipoEndereco):
+                _globalError = "Informe o tipo de endereço antes de continuar.";
+                return false;
+
+            case 8 when _model is { TipoViaRua: false, TipoViaAvenida: false, TipoViaLogradouro: false }:
+                _globalError = "Selecione pelo menos um tipo de via antes de continuar.";
+                return false;
+        }
+
+        return true;
+    }
+
+    private int? GetFirstInvalidRequiredFieldIndex()
+    {
+        if (string.IsNullOrWhiteSpace(_model.Nome))
+            return 0;
+        if (string.IsNullOrWhiteSpace(_model.Cpf))
+            return 1;
+        if (string.IsNullOrWhiteSpace(_model.Email))
+            return 2;
+        if (string.IsNullOrWhiteSpace(_model.TipoEndereco))
+            return 5;
+        if (_model is { TipoViaRua: false, TipoViaAvenida: false, TipoViaLogradouro: false })
+            return 8;
+
+        return null;
+    }
+
+    private void HandleValidateClick()
+    {
+        _mensagemSucesso = null;
+        _globalError = null;
+        _errors.Clear();
+
+        // Validação manual
+        if (string.IsNullOrWhiteSpace(_model.Nome))
+            _errors["Nome"] = "Nome é obrigatório";
+
+        if (string.IsNullOrWhiteSpace(_model.Cpf))
+            _errors["Cpf"] = "CPF é obrigatório";
+
+        if (string.IsNullOrWhiteSpace(_model.Email))
+            _errors["Email"] = "E-mail é obrigatório";
+        else if (!IsValidEmail(_model.Email))
+            _errors["Email"] = "E-mail inválido";
+
+        if (string.IsNullOrWhiteSpace(_model.TipoEndereco))
+            _errors["TipoEndereco"] = "Tipo de endereço é obrigatório";
+
+        if (!_model.TipoViaRua && !_model.TipoViaAvenida && !_model.TipoViaLogradouro)
+            _errors["TipoVia"] = "Selecione pelo menos um tipo de via";
+
+        if (_errors.Count == 0)
+        {
+            _mensagemSucesso = "Formulário válido. Convertido de EditForm para formulário normal.";
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task EnterDropdownModeAsync(bool isUf)
+    {
+        if (isUf)
+        {
+            if (!CanUseField(6) || _ufs.Length == 0)
+                return;
+
+            _ufDropdownMode = true;
+            var currentIndex = Array.IndexOf(_ufs, _model.Uf);
+            _ufPendingIndex = currentIndex >= 0 ? currentIndex : 0;
+
+            await Js.InvokeVoidAsync("keyboardForm.setSelectIndex", "campo-uf", _ufPendingIndex + 1);
+            await Js.InvokeVoidAsync("keyboardForm.openSelect", "campo-uf");
+        }
+        else
+        {
+            if (!CanUseField(7) || string.IsNullOrWhiteSpace(_model.Uf) ||
+                _cidadesBaseAtual is null || _cidadesBaseAtual.Count == 0)
+                return;
+
+            _cidadeDropdownMode = true;
+
+            int currentIndex = -1;
+            for (int i = 0; i < _cidadesBaseAtual.Count; i++)
+            {
+                if (string.Equals(_cidadesBaseAtual[i], _model.Cidade, StringComparison.OrdinalIgnoreCase))
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            _cidadePendingIndex = currentIndex >= 0 ? currentIndex : 0;
+
+            await Js.InvokeVoidAsync("keyboardForm.setSelectIndex", "campo-cidade", _cidadePendingIndex + 1);
+            await Js.InvokeVoidAsync("keyboardForm.openSelect", "campo-cidade");
+        }
+    }
+
+    private bool CanUseField(int index)
+    {
+        int? firstInvalid = GetFirstInvalidRequiredFieldIndex();
+        return !(firstInvalid.HasValue && firstInvalid.Value < index);
+    }
+
+    private async Task MovePendingAsync(bool isUf, int delta)
+    {
+        if (isUf)
+        {
+            if (!_ufDropdownMode || _ufs.Length == 0)
+                return;
+
+            int count = _ufs.Length;
+            _ufPendingIndex = (_ufPendingIndex + delta + count) % count;
+            await Js.InvokeVoidAsync("keyboardForm.setSelectIndex", "campo-uf", _ufPendingIndex + 1);
+        }
+        else
+        {
+            if (!_cidadeDropdownMode || _cidadesBaseAtual is null || _cidadesBaseAtual.Count == 0)
+                return;
+
+            var count = _cidadesBaseAtual.Count;
+            _cidadePendingIndex = (_cidadePendingIndex + delta + count) % count;
+
+            await Js.InvokeVoidAsync("keyboardForm.setSelectIndex", "campo-cidade", _cidadePendingIndex + 1);
+        }
+    }
+
+    private void CommitDropdownSelection(bool isUf)
+    {
+        if (isUf)
+        {
+            if (!_ufDropdownMode || _ufs.Length == 0)
+                return;
+
+            _model.Uf = _ufs[_ufPendingIndex];
+            _ufDropdownMode = false;
+
+            AtualizarCidadesBase();
+            StateHasChanged();
+        }
+        else
+        {
+            if (!_cidadeDropdownMode || _cidadesBaseAtual is null || _cidadesBaseAtual.Count == 0)
+                return;
+
+            _model.Cidade = _cidadesBaseAtual[_cidadePendingIndex];
+            _cidadeDropdownMode = false;
+
+            StateHasChanged();
+        }
+    }
+
+}

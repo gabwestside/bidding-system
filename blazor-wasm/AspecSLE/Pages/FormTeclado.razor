@@ -644,7 +644,7 @@
         "RS", "RO", "RR", "SC", "SP", "SE", "TO"
     ];
 
-    private IReadOnlyList<string> _cidadesBaseAtual = Array.Empty<string>();
+    private IReadOnlyList<string> _cidadesBaseAtual = [];
 
     private bool _ufDropdownOpen;
     private int? _ufFocusedIndex;
@@ -877,7 +877,7 @@
     private IReadOnlyList<string> GetCidadesFiltradas()
     {
         if (_cidadesBaseAtual == null || _cidadesBaseAtual.Count == 0)
-            return Array.Empty<string>();
+            return [];
 
         if (string.IsNullOrWhiteSpace(_cidade))
             return _cidadesBaseAtual;
@@ -933,7 +933,7 @@
         // Rádio (index 5)
         if (index == 5)
         {
-            if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+            if (e.Key is "ArrowLeft" or "ArrowRight")
             {
                 _tipoEnderecoFocusIndex = _tipoEnderecoFocusIndex == 0 ? 1 : 0;
                 var radioRef = _tipoEnderecoFocusIndex == 0
@@ -1101,8 +1101,8 @@
             }
         }
 
-        // Ctrl + Home => primeiro campo
-        if (e.Key == "Home" && e.CtrlKey)
+        // Ctrl + Home → primeiro campo
+        if (e is { Key: "Home", CtrlKey: true })
         {
             _globalError = null;
             await FocusFieldAsync(0, center: true);
@@ -1110,14 +1110,14 @@
         }
 
         // Ctrl + End => último campo
-        if (e.Key == "End" && e.CtrlKey)
+        if (e is { Key: "End", CtrlKey: true })
         {
             _globalError = null;
             await FocusFieldAsync(TotalFields - 1, center: true);
             return;
         }
 
-        // PageDown => "bloco" pra frente
+        // PageDown → "bloco" para frente
         if (e.Key == "PageDown")
         {
             var target = Math.Min(TotalFields - 1, index + PageSize);
@@ -1136,7 +1136,7 @@
             return;
         }
 
-        // PageUp => "bloco" pra trás
+        // PageUp → "bloco" para trás
         if (e.Key == "PageUp")
         {
             var target = Math.Max(0, index - PageSize);

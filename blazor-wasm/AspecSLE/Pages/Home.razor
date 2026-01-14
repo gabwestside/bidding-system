@@ -25,7 +25,7 @@
             </p>
 
             <div class="flex flex-wrap items-center gap-3 pt-1">
-                <NavLink href="/cadastro-fornecedor"
+                @* <NavLink href="/cadastro-fornecedor"
                          class="inline-flex items-center justify-center bg-primary text-white hover:bg-primary-strong text-xs md:text-sm px-4 md:px-5 py-2 rounded-full">
                     Cadastrar fornecedor
                 </NavLink>
@@ -33,11 +33,21 @@
                 <NavLink href="/processos"
                          class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
                     Ver processos abertos
-                </NavLink>
+                </NavLink> *@
 
                 <NavLink href="/form-teclado"
-                         class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                    class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
                     Formulário de Navegação
+                </NavLink>
+
+                <NavLink href="/form-validacao"
+                    class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                    Formulário de Validação
+                </NavLink>
+
+                <NavLink href="/form-simplicificado"
+                    class="inline-flex items-center justify-center border border-primary-soft text-xs md:text-sm text-primary-strong bg-white hover:bg-primary-soft/70 px-4 md:px-5 py-2 rounded-full">
+                    Formulário Simplificado
                 </NavLink>
 
                 <p class="text-[11px] md:text-xs text-slate-500">
@@ -91,9 +101,8 @@
         <div class="grid gap-4 md:grid-cols-3">
             @foreach (var p in _personas)
             {
-                <button type="button"
-                        @onclick="@(() => OnPersonaClick(p))"
-                        class="@($"text-left rounded-2xl border border-border-soft bg-card-bg shadow-sm overflow-hidden flex flex-col {p.Color} cursor-pointer transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary")">
+                <button type="button" @onclick="@(() => OnPersonaClick(p))"
+                    class="@($"text-left rounded-2xl border border-border-soft bg-card-bg shadow-sm overflow-hidden flex flex-col {p.Color} cursor-pointer transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary")">
                     <div class="p-4 flex items-center gap-3">
                         <div class="h-10 w-10 rounded-full bg-white/80 flex items-center justify-center text-lg">
                             @p.Icon
@@ -161,7 +170,7 @@
                 </div>
                 <div class="px-4 pb-4 pt-1">
                     <NavLink href="/processos"
-                             class="w-full h-8 inline-flex items-center justify-center rounded-full border border-primary-soft text-[11px] text-primary-strong bg-primary-soft/10 hover:bg-primary-soft/40">
+                        class="w-full h-8 inline-flex items-center justify-center rounded-full border border-primary-soft text-[11px] text-primary-strong bg-primary-soft/10 hover:bg-primary-soft/40">
                         Ver todos os processos
                     </NavLink>
                 </div>
@@ -189,7 +198,7 @@
                 </div>
                 <div class="px-4 pb-4 pt-1">
                     <a href="https://www.aspec.com.br" target="_blank"
-                       class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
+                        class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
                         Ver notícias no site da Aspec
                     </a>
                 </div>
@@ -217,7 +226,7 @@
                 </div>
                 <div class="px-4 pb-4 pt-1">
                     <a href="https://aspec.com.br/contato/fale-conosco/" target="_blank"
-                       class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
+                        class="inline-flex h-8 items-center text-[11px] text-primary-strong hover:underline">
                         Fale com a equipe da Aspec
                     </a>
                 </div>
@@ -263,7 +272,7 @@
                 </div>
 
                 <a href="https://aspec.com.br/contato/fale-conosco/" target="_blank"
-                   class="inline-flex items-center mt-2 rounded-full bg-amber-400 text-slate-900 hover:bg-amber-300 text-xs md:text-sm font-semibold px-4 py-2">
+                    class="inline-flex items-center mt-2 rounded-full bg-amber-400 text-slate-900 hover:bg-amber-300 text-xs md:text-sm font-semibold px-4 py-2">
                     Solicitar apresentação
                 </a>
             </div>
@@ -314,9 +323,8 @@
                         pública eficiente e transparente.
                     </p>
                 </div>
-                <a href="https://www.youtube.com/results?search_query=Aspec+Inform%C3%A1tica"
-                   target="_blank"
-                   class="inline-flex h-8 items-center rounded-full border border-amber-300 px-3 text-[11px] text-amber-200 hover:bg-amber-300/10">
+                <a href="https://www.youtube.com/results?search_query=Aspec+Inform%C3%A1tica" target="_blank"
+                    class="inline-flex h-8 items-center rounded-full border border-amber-300 px-3 text-[11px] text-amber-200 hover:bg-amber-300/10">
                     Ver vídeos da Aspec
                 </a>
             </div>
@@ -327,45 +335,45 @@
 @code {
 
     private record Persona(
-        string Title,
-        string Description,
-        string Highlight,
-        string Color,
-        string Pill,
-        string Icon,
-        bool RequiresAuth,
-        string TargetPath
+    string Title,
+    string Description,
+    string Highlight,
+    string Color,
+    string Pill,
+    string Icon,
+    bool RequiresAuth,
+    string TargetPath
     );
 
     private readonly Persona[] _personas =
     [
-        new("Fornecedor",
+    new("Fornecedor",
             "Cadastre-se para participar de licitações, acompanhar editais e enviar propostas de forma simplificada.",
             "Ideal para empresas que vendem para o poder público.",
             "bg-emerald-50",
             "Participar de licitações",
             "🏢",
-            true,
+true,
             "/fornecedor"
-        ),
-        new("Comprador",
+),
+new("Comprador",
             "Gerencie processos, organize documentos e tenha uma visão clara das etapas de cada licitação.",
             "Transparência e rastreabilidade em cada fase.",
             "bg-sky-50",
             "Gestão de processos",
             "📈",
-            true,
+true,
             "/comprador"
-        ),
-        new("Sociedade",
+),
+new("Sociedade",
             "Acompanhe licitações públicas, visualize resultados e fortaleça o controle social.",
             "Mais transparência nas contratações públicas.",
             "bg-violet-50",
             "Transparência",
             "📣",
-            false,
+false,
             "/sociedade"
-        )
+)
     ];
 
     private void OnPersonaClick(Persona p)

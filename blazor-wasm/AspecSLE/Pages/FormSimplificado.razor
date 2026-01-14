@@ -1,0 +1,320 @@
+@page "/form-simplicificado"
+@using Microsoft.AspNetCore.Components.Forms
+
+<PageTitle>Aspec Licita - Formulário Simplificado</PageTitle>
+
+<div class="min-h-[calc(80vh-96px)] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-xl">
+        <div class="text-[11px] text-slate-500 mb-1.5">
+            <span class="text-primary font-medium">
+                Formulário Simplificado
+            </span>
+        </div>
+
+        <div class="border border-border-soft shadow-sm bg-header/95 backdrop-blur rounded-xl">
+            <div class="px-4 pt-4 pb-2 border-b border-border-soft">
+                <h1 class="text-base font-semibold tracking-tight text-slate-900 text-center">
+                    Preenchimento somente no teclado
+                </h1>
+                <p class="text-[11px] text-slate-500 text-center mt-1">
+                    Use as setas, Enter, Ctrl+Home / Ctrl+End, PageUp / PageDown.
+                    Não é permitido pular campos obrigatórios.
+                </p>
+            </div>
+
+            <EditForm EditContext="_editContext" autocomplete="off">
+                <DataAnnotationsValidator />
+
+                <div class="px-4 pt-3 pb-3 space-y-3">
+                    @if (!string.IsNullOrEmpty(_globalError))
+                    {
+                        <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                            @_globalError
+                        </div>
+                    }
+
+                    <!-- BLOCO 1 - Dados básicos -->
+                    <div class="text-[11px] font-semibold text-slate-600 mt-1">Dados básicos</div>
+
+                    <!-- Campo 0: Nome -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-nome">
+                            Nome completo <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-nome" @ref="_fieldNomeRef"
+                               class="@InputCss"
+                               placeholder="Informe o nome"
+                               value="@_model.Nome"
+                               @oninput="e => OnFieldChanged(e, FieldIndex.Nome)"
+                               @onfocus="() => OnFieldFocus(FieldIndex.Nome)"
+                               @onkeydown="e => OnKeyDown(e, FieldIndex.Nome)" />
+                        <ValidationMessage For="@(() => _model.Nome)" class="@ValidationCss" />
+                    </div>
+
+                    <!-- Campo 1: CPF -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-cpf">
+                            CPF <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-cpf" @ref="_fieldCpfRef"
+                               class="@InputCss"
+                               placeholder="999.999.999-99"
+                               value="@_model.Cpf"
+                               @oninput="e => OnFieldChanged(e, FieldIndex.Cpf)"
+                               @onfocus="() => OnFieldFocus(FieldIndex.Cpf)"
+                               @onkeydown="e => OnKeyDown(e, FieldIndex.Cpf)" />
+                        <ValidationMessage For="@(() => _model.Cpf)" class="@ValidationCss" />
+                    </div>
+
+                    <!-- Campo 2: Email -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-email">
+                            E-mail <span class="text-red-500">*</span>
+                        </label>
+                        <input id="campo-email" @ref="_fieldEmailRef"
+                               class="@InputCss"
+                               placeholder="email@dominio.com"
+                               value="@_model.Email"
+                               @oninput="e => OnFieldChanged(e, FieldIndex.Email)"
+                               @onfocus="() => OnFieldFocus(FieldIndex.Email)"
+                               @onkeydown="e => OnKeyDown(e, FieldIndex.Email)" />
+                        <ValidationMessage For="@(() => _model.Email)" class="@ValidationCss" />
+                    </div>
+
+                    <!-- Campo 3: Telefone -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-telefone">
+                            Telefone (opcional)
+                        </label>
+                        <input id="campo-telefone" @ref="_fieldTelefoneRef"
+                               class="@InputCss"
+                               placeholder="(00) 00000-0000"
+                               value="@_model.Telefone"
+                               @oninput="e => OnFieldChanged(e, FieldIndex.Telefone)"
+                               @onfocus="OnTelefoneFocus"
+                               @onblur="HideTelefoneInfo"
+                               @onkeydown="e => OnKeyDown(e, FieldIndex.Telefone)" />
+
+                        @if (_showTelefoneInfo)
+                        {
+                            <div class="text-xs text-slate-600 bg-yellow-50 border border-yellow-200 rounded-md px-2 py-1 mt-1">
+                                Campo Telefone recebeu o foco
+                                <p />
+                                — esta mensagem está sendo exibida somente para teste.
+                                <p />
+                                — aqui podemos chamar 4 métodos para as 4 tarefas necessárias de checagem.
+                            </div>
+                        }
+                    </div>
+
+                    <!-- BLOCO 2 - Endereço -->
+                    <div class="text-[11px] font-semibold text-slate-600 mt-3">Endereço</div>
+
+                    <!-- Campo 4: Logradouro -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-logradouro">
+                            Logradouro
+                        </label>
+                        <input id="campo-logradouro" @ref="_fieldLogradouroRef"
+                               class="@InputCss"
+                               placeholder="Rua, avenida..."
+                               value="@_model.Logradouro"
+                               @oninput="e => OnFieldChanged(e, FieldIndex.Logradouro)"
+                               @onfocus="() => OnFieldFocus(FieldIndex.Logradouro)"
+                               @onkeydown="e => OnKeyDown(e, FieldIndex.Logradouro)" />
+                    </div>
+
+                    <!-- Campo 5: Tipo de endereço -->
+                    <div class="space-y-1">
+                        <span class="@LabelCss">Tipo de endereço</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="radio"
+                                       name="tipo-endereco"
+                                       value="@TipoComercial"
+                                       @ref="_fieldTipoEndComercialRef"
+                                       checked="@(_model.TipoEndereco == TipoComercial)"
+                                       @onchange="@(() => _model.TipoEndereco = TipoComercial)"
+                                       @onfocus="() => OnTipoEnderecoFocus(0)"
+                                       @onkeydown="e => OnKeyDown(e, FieldIndex.TipoEndereco)"
+                                       @onkeydown:preventDefault="true"
+                                       class="@RadioCheckboxCss" />
+                                <span class="ml-1">Comercial</span>
+                            </label>
+
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="radio"
+                                       name="tipo-endereco"
+                                       value="@TipoEmpresarial"
+                                       @ref="_fieldTipoEndEmpresarialRef"
+                                       checked="@(_model.TipoEndereco == TipoEmpresarial)"
+                                       @onchange="@(() => _model.TipoEndereco = TipoEmpresarial)"
+                                       @onfocus="() => OnTipoEnderecoFocus(1)"
+                                       @onkeydown="e => OnKeyDown(e, FieldIndex.TipoEndereco)"
+                                       @onkeydown:preventDefault="true"
+                                       class="@RadioCheckboxCss" />
+                                <span class="ml-1">Empresarial</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campo 6: UF -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-uf">
+                            UF
+                        </label>
+                        <div class="relative">
+                            <input id="campo-uf" @ref="_fieldUfRef"
+                                   value="@_model.Uf"
+                                   @oninput="e => OnFieldChanged(e, FieldIndex.Uf)"
+                                   @onfocus="() => OnFieldFocus(FieldIndex.Uf)"
+                                   @onkeydown="e => OnKeyDown(e, FieldIndex.Uf)"
+                                   placeholder="UF"
+                                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                                   class="@InputCssWithButton" />
+
+                            <button type="button" tabindex="-1"
+                                    class="@ComboButtonCss"
+                                    @onclick="ToggleUfDropdown">
+                                ▼
+                            </button>
+
+                            @if (_ufDropdownOpen)
+                            {
+                                var ufsFiltradas = GetUfsFiltradas();
+                                <div class="@DropdownCss">
+                                    @for (var i = 0; i < ufsFiltradas.Count; i++)
+                                    {
+                                        var uf = ufsFiltradas[i];
+                                        var isFocused = _ufFocusedIndex.HasValue && _ufFocusedIndex.Value == i;
+
+                                        <div class="@GetDropdownItemCss(isFocused)"
+                                             @onclick="@(() => SelectUf(uf))">
+                                            @uf
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Campo 7: Cidade -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-cidade">
+                            Cidade
+                        </label>
+                        <div class="relative">
+                            <input id="campo-cidade" @ref="_fieldCidadeRef"
+                                   value="@_model.Cidade"
+                                   @oninput="e => OnFieldChanged(e, FieldIndex.Cidade)"
+                                   @onfocus="() => OnFieldFocus(FieldIndex.Cidade)"
+                                   @onkeydown="e => OnKeyDown(e, FieldIndex.Cidade)"
+                                   placeholder="Cidade"
+                                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                                   class="@InputCssWithButton" />
+
+                            <button type="button" tabindex="-1"
+                                    class="@ComboButtonCss"
+                                    @onclick="ToggleCidadeDropdown">
+                                ▼
+                            </button>
+
+                            @if (_cidadeDropdownOpen)
+                            {
+                                var cidadesFiltradas = GetCidadesFiltradas();
+                                <div class="@DropdownCss">
+                                    @for (var i = 0; i < cidadesFiltradas.Count; i++)
+                                    {
+                                        var opcao = cidadesFiltradas[i];
+                                        var isFocused = _cidadeFocusedIndex.HasValue && _cidadeFocusedIndex.Value == i;
+
+                                        <div class="@GetDropdownItemCss(isFocused)"
+                                             @onclick="@(() => SelectCidade(opcao))">
+                                            @opcao
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Campo 8: Tipo de via -->
+                    <div class="space-y-1">
+                        <span class="@LabelCss">
+                            Tipo de via <span class="text-red-500">*</span>
+                        </span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="checkbox"
+                                       @ref="_fieldTipoViaRuaRef"
+                                       checked="@_model.TipoViaRua"
+                                       @onchange="@(() => ToggleTipoVia(0))"
+                                       @onfocus="() => OnTipoViaFocus(0)"
+                                       @onkeydown="e => OnKeyDown(e, FieldIndex.TipoVia)"
+                                       @onkeydown:preventDefault="true"
+                                       class="@RadioCheckboxCss" />
+                                <span class="ml-1">Rua</span>
+                            </label>
+
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="checkbox"
+                                       @ref="_fieldTipoViaAvenidaRef"
+                                       checked="@_model.TipoViaAvenida"
+                                       @onchange="@(() => ToggleTipoVia(1))"
+                                       @onfocus="() => OnTipoViaFocus(1)"
+                                       @onkeydown="e => OnKeyDown(e, FieldIndex.TipoVia)"
+                                       @onkeydown:preventDefault="true"
+                                       class="@RadioCheckboxCss" />
+                                <span class="ml-1">Avenida</span>
+                            </label>
+
+                            <label class="inline-flex items-center text-xs text-slate-700">
+                                <input type="checkbox"
+                                       @ref="_fieldTipoViaLogradouroRef"
+                                       checked="@_model.TipoViaLogradouro"
+                                       @onchange="@(() => ToggleTipoVia(2))"
+                                       @onfocus="() => OnTipoViaFocus(2)"
+                                       @onkeydown="e => OnKeyDown(e, FieldIndex.TipoVia)"
+                                       @onkeydown:preventDefault="true"
+                                       class="@RadioCheckboxCss" />
+                                <span class="ml-1">Logradouro</span>
+                            </label>
+                        </div>
+                        <ValidationMessage For="@(() => _model.TipoViaDummy)" class="@ValidationCss" />
+                    </div>
+
+                    <!-- Campo 9: Descrição da via -->
+                    <div class="space-y-1">
+                        <label class="@LabelCss" for="campo-desc-via">
+                            Nome da rua/avenida/logradouro
+                        </label>
+                        <textarea id="campo-desc-via" @ref="_fieldDescricaoViaRef"
+                                  class="@TextAreaCss"
+                                  placeholder="Ex.: Rua das Flores, Av. Paulista..."
+                                  value="@_model.DescricaoVia"
+                                  disabled="@(!HasTipoViaSelecionado)"
+                                  @oninput="e => OnFieldChanged(e, FieldIndex.DescricaoVia)"
+                                  @onfocus="() => OnFieldFocus(FieldIndex.DescricaoVia)"
+                                  @onkeydown="e => OnKeyDown(e, FieldIndex.DescricaoVia)" />
+                    </div>
+
+                    <!-- Botão de envio -->
+                    <div class="pt-2">
+                        <button type="button"
+                                @onclick="HandleClickSubmit"
+                                class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-md bg-primary text-white hover:opacity-90">
+                            Validar / Enviar
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_mensagemSucesso))
+                    {
+                        <div class="mt-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
+                            @_mensagemSucesso
+                        </div>
+                    }
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
